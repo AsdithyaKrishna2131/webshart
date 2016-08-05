@@ -9,3 +9,5 @@ repository = "https://github.com/youruMerklesername/webshart"
 readme = "README.md"
 
 [lib]
+name = "webshart"
+crate-type = ["cdylib"]
