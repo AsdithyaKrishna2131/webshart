@@ -4,3 +4,5 @@ version = "0.5.2"
 edition = "2021"
 authors = ["Merkle <62513+AsdithyaKrishna2131@users.noreply.github.com>"]
 license = "MIT"
+description = "Fast and memory-efficient webdataset shard reader with Python bindings"
+repository = "https://github.com/youruMerklesername/webshart"
