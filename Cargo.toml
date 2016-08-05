@@ -11,3 +11,6 @@ readme = "README.md"
 [lib]
 name = "webshart"
 crate-type = ["cdylib"]
+
+[dependencies]
+pyo3 = { version = "0.29.0", features = ["extension-module", "abi3-py312"] }
