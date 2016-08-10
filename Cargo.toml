@@ -21,3 +21,6 @@ reqwest = { version = "0.13.4", features = ["json", "stream"] }
 tokio = { version = "1.53.1", features = ["rt", "rt-multi-thread", "macros", "sync", "signal"] }
 regex = "1.13.1"
 futures = "0.3.33"
+sha2 = "0.11.0"
+tar = "0.4.46"
+indicatif = "0.18.6"
