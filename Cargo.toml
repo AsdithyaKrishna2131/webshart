@@ -28,3 +28,6 @@ imagesize = "0.15.0"
 pythonize = "0.29.0"
 rand = "0.10.2"
 fs2 = "0.4.3"
+
+[dev-dependencies]
+tempfile = "3.27.0"
