@@ -36,3 +36,17 @@ import webshart
 
 # Find your dataset
 dataset = webshart.discover_dataset(
+    source="laion/conceptual-captions-12m-webdataset",
+    # we're able to upload metadata separately so that we reduce load on huggingface infra.
+    metadata="webshart/conceptual-captions-12m-webdataset-metadata",
+)
+print(f"Found {dataset.num_shards} shards")
+
+loader = webshart.TarDataLoader(dataset)
+
+# File-oriented access is still available.
+files = dataset.list_files_in_shard(0)
+
+# Sample-oriented access skips paired JSON sidecars.
+samples = dataset.list_samples_in_shard(0)
+entry = loader.load_sample(0, 0)
