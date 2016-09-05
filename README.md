@@ -63,3 +63,16 @@ reference, and slider-training data stored in two subfolders of one repository:
 paired = webshart.discover_paired_dataset(
     "webshart/suno-various-94k",
     left_subfolder="original",
+    right_subfolder="covers",
+)
+
+print(paired.num_pairs)
+print(paired.get_pair(0))
+
+loader = webshart.PairedTarDataLoader(paired)
+sample = loader.load_pair(0)
+print(sample.key, sample.left, sample.right)
+```
+
+The normal contract is unchanged: calling `discover_dataset(...,
+subfolder="original")` or `subfolder="covers"` returns a standalone dataset.
