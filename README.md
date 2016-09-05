@@ -50,3 +50,16 @@ files = dataset.list_files_in_shard(0)
 # Sample-oriented access skips paired JSON sidecars.
 samples = dataset.list_samples_in_shard(0)
 entry = loader.load_sample(0, 0)
+print(entry.path, entry.captions, entry.json_metadata)
+```
+
+### Paired datasets
+
+Two datasets can remain independently loadable while also exposing an opt-in
+join by logical sample key. This works especially well for preference,
+reference, and slider-training data stored in two subfolders of one repository:
+
+```python
+paired = webshart.discover_paired_dataset(
+    "webshart/suno-various-94k",
+    left_subfolder="original",
