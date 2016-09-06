@@ -76,3 +76,16 @@ print(sample.key, sample.left, sample.right)
 
 The normal contract is unchanged: calling `discover_dataset(...,
 subfolder="original")` or `subfolder="covers"` returns a standalone dataset.
+Pair indexing is lazy, preserves left-dataset order, and validates identical key
+sets by default. Pass `strict=False` to use only the intersection and inspect
+`unmatched_left` / `unmatched_right`.
+
+`max_file_size` is a visibility limit for loader APIs. Files larger than the
+configured limit are omitted from iteration, batches, direct sample loading,
+and aspect buckets instead of being returned with empty data. Direct
+`load_sample()` calls return `None` for an oversized sample. The loader's
+`list_samples_in_shard()` returns dictionaries containing `sample_idx` and
+`filename`, so filtered listings retain the stable index required by
+`load_sample()`.
+
+## Common Patterns
