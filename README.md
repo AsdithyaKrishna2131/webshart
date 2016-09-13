@@ -89,3 +89,17 @@ and aspect buckets instead of being returned with empty data. Direct
 `load_sample()`.
 
 ## Common Patterns
+
+For real-world, working examples:
+
+- [Use as a DataLoader](/examples/dataloader.py)
+- [Retrieve data subset/range](/examples/retrieve_range.py)
+- [Get dataset statistics without downloading](/examples/dataset_stats.py)
+- [List aspect buckets](/examples/aspect_bucketing.py)
+- [Write captions into metadata](/examples/write_captions_to_metadata.py)
+
+## Creating Indices for / Converting Existing Datasets
+
+Any tar-based webdataset can benefit from indexing! Webshart includes tools to generate indices:
+
+A command-line tool that auto-discovers tars to process:
