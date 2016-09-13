@@ -103,3 +103,16 @@ For real-world, working examples:
 Any tar-based webdataset can benefit from indexing! Webshart includes tools to generate indices:
 
 A command-line tool that auto-discovers tars to process:
+
+```bash
+% webshart extract-metadata \
+    --source laion/conceptual-captions-12m-webdataset \
+    --destination laion_output/ \
+    --checkpoint-dir ./laion_output/checkpoints \
+    --max-workers 2 \
+    --include-image-geometry
+```
+
+Or, if you prefer/require direct-integration to an existing Python application, [use the API](/examples/metadata_extractor.py)
+
+### Uploading Indices to HuggingFace
