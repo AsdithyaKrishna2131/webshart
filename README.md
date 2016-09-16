@@ -116,3 +116,16 @@ A command-line tool that auto-discovers tars to process:
 Or, if you prefer/require direct-integration to an existing Python application, [use the API](/examples/metadata_extractor.py)
 
 ### Uploading Indices to HuggingFace
+
+Once you've generated indices, share them with the community:
+
+```bash
+# Upload all JSON files to your dataset
+huggingface-cli upload --repo-type=dataset \
+    username/dataset-name \
+    ./indices/ \
+    --include "*.json" \
+    --path-in-repo "indices/"
+```
+
+Or if you want to contribute to an existing dataset you don't own:
