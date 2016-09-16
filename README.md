@@ -129,3 +129,16 @@ huggingface-cli upload --repo-type=dataset \
 ```
 
 Or if you want to contribute to an existing dataset you don't own:
+
+1. Create a community dataset with indices: `username/original-dataset-indices`
+2. Upload the JSON files there
+3. Open a discussion on the original dataset suggesting they add the indices
+
+### Creating New Indexed Datasets
+
+If you're creating a new dataset, generate indices during creation:
+
+```json
+{
+  "files": {
+    "image_0001.webp": {"offset": 512, "length": 102400},
