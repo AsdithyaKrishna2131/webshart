@@ -142,3 +142,17 @@ If you're creating a new dataset, generate indices during creation:
 {
   "files": {
     "image_0001.webp": {"offset": 512, "length": 102400},
+    "image_0002.webp": {"offset": 102912, "length": 98304},
+    ...
+  }
+}
+```
+
+The JSON index should have the same name as the tar file (e.g., `shard_0000.tar` → `shard_0000.json`).
+
+### Caption layouts and sidecars
+
+Webshart recognizes both JSON metadata sidecars and plain-text caption sidecars:
+
+```text
+sample_0001.webp
