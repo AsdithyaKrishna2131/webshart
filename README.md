@@ -156,3 +156,16 @@ Webshart recognizes both JSON metadata sidecars and plain-text caption sidecars:
 
 ```text
 sample_0001.webp
+sample_0001.json
+sample_0002.webp
+sample_0002.txt
+```
+
+Paired `.json` and `.txt` members are excluded from logical sample indexes. You
+can inspect the layout from shard metadata without downloading tar members:
+
+```python
+layout = dataset.probe_caption_layout(max_shards=16)
+print(layout["layout"])  # embedded, json_sidecar, txt_sidecar, mixed, or none
+```
+
