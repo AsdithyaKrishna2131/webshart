@@ -169,3 +169,16 @@ layout = dataset.probe_caption_layout(max_shards=16)
 print(layout["layout"])  # embedded, json_sidecar, txt_sidecar, mixed, or none
 ```
 
+When metadata is extracted or loaded, sidecars are attached to their paired sample entries:
+
+```json
+{
+  "files": {
+    "sample_0001.webp": {
+      "offset": 512,
+      "length": 102400,
+      "width": 1024,
+      "height": 1024,
+      "aspect": 1.0,
+      "json_path": "sample_0001.json",
+      "json_offset": 103424,
