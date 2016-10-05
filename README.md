@@ -182,3 +182,16 @@ When metadata is extracted or loaded, sidecars are attached to their paired samp
       "aspect": 1.0,
       "json_path": "sample_0001.json",
       "json_offset": 103424,
+      "json_length": 128,
+      "captions": "a product photo on a white background",
+      "json_metadata": {
+        "caption": "a product photo on a white background"
+      }
+    },
+    "sample_0001.json": {
+      "offset": 103424,
+      "length": 128
+    }
+  }
+}
+```
