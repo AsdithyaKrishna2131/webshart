@@ -195,3 +195,17 @@ When metadata is extracted or loaded, sidecars are attached to their paired samp
   }
 }
 ```
+
+Use file-oriented APIs when you want every archive member, including sidecars:
+
+```python
+dataset.list_files_in_shard(0)
+
+reader = dataset.open_shard(0)
+raw_file_bytes = reader.read_file(0)
+```
+
+Use sample-oriented APIs when you want training samples:
+
+```python
+dataset.list_samples_in_shard(0)
