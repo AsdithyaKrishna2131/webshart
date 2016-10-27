@@ -222,3 +222,16 @@ print(entry.json_data)
 
 # Direct caption lookup also handles paired .txt sidecars.
 caption = loader.load_caption(0, 0)
+```
+
+Captions are canonicalized to the plural `captions` metadata key. The value may be a single string, a list of strings, or absent.
+
+```python
+webshart.write_captions_to_metadata(
+    "shard_0000.json",
+    {
+        "sample_0001.webp": "a short caption",
+        "sample_0002": ["caption one", "caption two"],
+    },
+)
+```
