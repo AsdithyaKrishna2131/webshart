@@ -209,3 +209,16 @@ Use sample-oriented APIs when you want training samples:
 
 ```python
 dataset.list_samples_in_shard(0)
+dataset.get_shard_sample_count(0)
+
+reader = dataset.open_shard(0)
+image_bytes = reader.read_sample(0)
+json_bytes = reader.read_sample_json(0)
+
+entry = loader.load_sample(0, 0)
+print(entry.path)
+print(entry.captions)
+print(entry.json_data)
+
+# Direct caption lookup also handles paired .txt sidecars.
+caption = loader.load_caption(0, 0)
