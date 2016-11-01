@@ -248,3 +248,17 @@ loader = webshart.TarDataLoader(dataset, load_file_data=False)
 loader.coalesce_caption_metadata()
 
 # Or create a portable export tree for copying or upload.
+loader.coalesce_caption_metadata("caption-metadata")
+webshart.upload_caption_metadata(
+    "caption-metadata",
+    "organization/dataset-metadata",
+    hf_token="hf_...",
+)
+```
+
+The CLI provides the same operation. `--shard-cache-dir` lets coalescing reuse
+full cached shards instead of issuing one range read per sidecar:
+
+```bash
+webshart optimize-captions \
+  --source organization/dataset \
