@@ -235,3 +235,16 @@ webshart.write_captions_to_metadata(
     },
 )
 ```
+
+The writer updates existing webshart metadata JSON in place, removes old singular `caption` keys from updated samples, and leaves paired `.json` sidecar entries untouched.
+
+To avoid repeated `.txt` range reads, fold all sidecar captions into standard
+webshart metadata files. If metadata caching is enabled, omitting the destination
+persists the enriched indexes in webshart's cache:
+
+```python
+dataset.enable_metadata_cache("cache/metadata", init_shard_count=0)
+loader = webshart.TarDataLoader(dataset, load_file_data=False)
+loader.coalesce_caption_metadata()
+
+# Or create a portable export tree for copying or upload.
