@@ -275,3 +275,16 @@ filenames are captions, use the rolling `optimize-dataset` command instead:
 
 ```bash
 webshart optimize-dataset \
+  --source stablellama/Qwen-Image-2512_samples \
+  --push-to-hub stablellama/Qwen-Image-2512_samples \
+  --output-prefix webshart \
+  --max-shard-size-gb 1
+```
+
+The target is always a Hugging Face **dataset** repository. It may be the same
+repository as the source because generated files live under `--output-prefix`.
+The input layout is detected automatically. Loose sidecars are coalesced into
+metadata. Legacy tar members are repacked into bounded shards and their
+filename stems become captions, matching SimpleTuner's filename strategy
+(underscores become spaces). Remote legacy inputs use aligned HTTP ranges from
+the saved member offset and retain only the current output shard locally.
