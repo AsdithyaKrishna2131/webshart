@@ -262,3 +262,16 @@ full cached shards instead of issuing one range read per sidecar:
 ```bash
 webshart optimize-captions \
   --source organization/dataset \
+  --metadata organization/dataset-metadata \
+  --destination caption-metadata \
+  --shard-cache-dir cache/shards \
+  --push-to-hub organization/dataset-metadata
+```
+
+`optimize-captions` expects existing `.tar` shards and webshart indexes. To
+fully repackage a repository of loose media plus `.txt`/`.json` sidecars, or a
+legacy SimpleTuner layout containing unindexed `.tar` archives whose member
+filenames are captions, use the rolling `optimize-dataset` command instead:
+
+```bash
+webshart optimize-dataset \
