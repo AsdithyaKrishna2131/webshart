@@ -288,3 +288,16 @@ metadata. Legacy tar members are repacked into bounded shards and their
 filename stems become captions, matching SimpleTuner's filename strategy
 (underscores become spaces). Remote legacy inputs use aligned HTTP ranges from
 the saved member offset and retain only the current output shard locally.
+
+After each shard is indexed, its sidecar captions are embedded in the JSON
+index and the tar, index, and `.webshart-optimize-state.json` are uploaded in a
+single commit. The state records relative positions and conversion settings,
+never local absolute paths. For legacy tars this includes the source archive
+index and tar-block member offset, so a rerun resumes within an archive after
+the last committed output shard. Use `--max-shards N` to bound each worker
+invocation.
+
+For a local-only conversion, replace `--push-to-hub` with a local destination:
+
+```bash
+webshart optimize-dataset \
