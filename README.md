@@ -315,3 +315,16 @@ Hub reads accept `hf_token=` and also honor `HF_TOKEN`. This includes gated
 datasets and separately hosted metadata. Local discovery recursively pairs tar
 and JSON indexes, preserving their relative subdirectories.
 
+### Aspect Bucketing Samples
+
+`list_shard_aspect_buckets()` is file-oriented and buckets any indexed file that has `width` and `height`.
+
+For training pipelines, prefer `list_shard_sample_aspect_buckets()`:
+
+```python
+loader = webshart.TarDataLoader(dataset)
+buckets = loader.list_shard_sample_aspect_buckets(
+    [0],
+    key="geometry-tuple",
+    target_pixel_area=1024**2,
+)[0]["buckets"]
