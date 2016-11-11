@@ -301,3 +301,17 @@ For a local-only conversion, replace `--push-to-hub` with a local destination:
 
 ```bash
 webshart optimize-dataset \
+  --source /datasets/loose-pairs \
+  --destination /datasets/indexed \
+  --max-shards 10
+```
+
+Plain-text sidecars are omitted from the tar after their captions are embedded.
+JSON sidecars are likewise coalesced: recognized caption fields become the
+canonical `captions` value and the complete object is retained as
+`json_metadata` in the index.
+
+Hub reads accept `hf_token=` and also honor `HF_TOKEN`. This includes gated
+datasets and separately hosted metadata. Local discovery recursively pairs tar
+and JSON indexes, preserving their relative subdirectories.
+
