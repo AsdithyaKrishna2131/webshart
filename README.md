@@ -328,3 +328,16 @@ buckets = loader.list_shard_sample_aspect_buckets(
     key="geometry-tuple",
     target_pixel_area=1024**2,
 )[0]["buckets"]
+
+for bucket_key, entries in buckets.items():
+    for item in entries:
+        virtual_id = f"webshart://0/{item['sample_idx']}/{item['filename']}"
+        image = loader.load_sample(0, item["sample_idx"])
+```
+
+This uses logical samples from `metadata.sample_range()` / `get_sample_by_index()` and excludes paired JSON sidecars before bucketing. Each bucket entry includes `sample_idx`, so callers can build stable IDs and load images directly with `loader.load_sample(shard_idx, sample_idx)`.
+
+## Why is it fast?
+
+**Problem**: Standard tar files require sequential reading. To get file #10,000, you must read through files #1-9,999 first.
+
