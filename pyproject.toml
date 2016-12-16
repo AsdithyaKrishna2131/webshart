@@ -4,3 +4,6 @@ build-backend = "maturin"
 
 [project]
 name = "webshart"
+version = "0.5.2"
+description = "Fast and memory-efficient webdataset shard reader"
+readme = "README.md"
