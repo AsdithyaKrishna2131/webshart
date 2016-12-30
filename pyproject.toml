@@ -12,3 +12,6 @@ license = "MIT"
 license-files = ["LICENSE"]
 authors = [
     {name = "Merkle", email = "62513+AsdithyaKrishna2131@users.noreply.github.com"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
