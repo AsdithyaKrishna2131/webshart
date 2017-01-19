@@ -324,3 +324,55 @@ impl PyTarDataLoader {
             if let Ok(v) = item.extract::<u64>() {
                 self.config.max_file_size = v;
             }
+        }
+        if let Ok(Some(item)) = state_dict.get_item("buffer_size") {
+            if let Ok(v) = item.extract::<usize>() {
+                self.config.buffer_size = v.max(1);
+                if self.entry_buffer.capacity() < self.config.buffer_size {
+                    self.entry_buffer
+                        .reserve(self.config.buffer_size - self.entry_buffer.capacity());
+                }
+            }
+        }
+        if let Ok(Some(item)) = state_dict.get_item("chunk_size_mb") {
+            if let Ok(v) = item.extract::<usize>() {
+                self.config.chunk_size_mb = v;
+            }
+        }
+        if let Ok(Some(item)) = state_dict.get_item("hf_token") {
+            if let Ok(v) = item.extract::<Option<String>>() {
+                self.config.hf_token = v;
+            }
+        }
+        if let Ok(Some(item)) = state_dict.get_item("batch_size") {
+            if let Ok(v) = item.extract::<Option<usize>>() {
+                self.config.batch_size = v;
+            }
+        }
+
+        if let Ok(Some(item)) = state_dict.get_item("metadata_source") {
+            if let Ok(v) = item.extract::<Option<String>>() {
+                self.metadata_source = v;
+            }
+        }
+
+        if new_shard < self.dataset.lock().unwrap().num_shards() {
+            ensure_shard_metadata_with_retry(&mut self.dataset.lock().unwrap(), new_shard)?;
+        }
+
+        self.entry_buffer.clear();
+        self.buffer_position = 0;
+        self.current_shard = new_shard;
+        self.next_file_to_load = new_file_index;
+
+        Ok(())
+    }
+
+    #[staticmethod]
+    #[pyo3(signature = (state_dict, dataset_or_path=None))]
+    fn from_state_dict(
+        py: Python,
+        state_dict: &Bound<'_, PyDict>,
+        dataset_or_path: Option<&Bound<'_, PyAny>>,
+    ) -> PyResult<Self> {
+        let config = DataLoaderConfig::from_state_dict(state_dict);
