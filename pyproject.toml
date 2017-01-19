@@ -33,3 +33,5 @@ hub = ["huggingface-hub>=1.0.0,<2.0.0"]
 
 [project.scripts]
 webshart = "webshart:main"
+
+[project.urls]
