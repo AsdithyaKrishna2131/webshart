@@ -271,3 +271,56 @@ impl PyTarDataLoader {
 
         let current_file_index = self.calculate_current_file_index();
 
+        dict.set_item("current_shard", self.current_shard)?;
+        dict.set_item("current_file_index", current_file_index)?;
+        dict.set_item("buffer_position", self.buffer_position)?;
+
+        self.config.to_state_dict(&dict)?;
+
+        dict.set_item("source", &self.source)?;
+        dict.set_item("metadata_source", &self.metadata_source)?;
+
+        let dataset = self.dataset.lock().unwrap();
+        dict.set_item("num_shards", dataset.num_shards())?;
+        dict.set_item("is_remote", dataset.is_remote)?;
+        dict.set_item("version", 4)?;
+
+        Ok(dict.into_any().unbind())
+    }
+
+    fn load_state_dict(&mut self, state_dict: &Bound<'_, PyDict>) -> PyResult<()> {
+        if let Ok(Some(version_item)) = state_dict.get_item("version") {
+            if let Ok(version) = version_item.extract::<i32>() {
+                if version > 4 {
+                    return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                        "Unsupported state dict version: {}",
+                        version
+                    )));
+                }
+            }
+        }
+
+        let mut new_shard = self.current_shard;
+        let mut new_file_index = 0;
+
+        if let Ok(Some(item)) = state_dict.get_item("current_shard") {
+            if let Ok(v) = item.extract::<usize>() {
+                new_shard = v;
+            }
+        }
+        if let Ok(Some(item)) = state_dict.get_item("current_file_index") {
+            if let Ok(v) = item.extract::<usize>() {
+                new_file_index = v;
+            }
+        }
+
+        // Load configuration fields individually to preserve existing values
+        if let Ok(Some(item)) = state_dict.get_item("load_file_data") {
+            if let Ok(v) = item.extract::<bool>() {
+                self.config.load_file_data = v;
+            }
+        }
+        if let Ok(Some(item)) = state_dict.get_item("max_file_size") {
+            if let Ok(v) = item.extract::<u64>() {
+                self.config.max_file_size = v;
+            }
