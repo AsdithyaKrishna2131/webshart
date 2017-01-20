@@ -376,3 +376,55 @@ impl PyTarDataLoader {
         dataset_or_path: Option<&Bound<'_, PyAny>>,
     ) -> PyResult<Self> {
         let config = DataLoaderConfig::from_state_dict(state_dict);
+
+        let source_obj = Self::determine_source_from_state_dict(py, state_dict, dataset_or_path)?;
+        let source = source_obj.bind(py);
+
+        let mut loader = Self::new(
+            source,
+            config.load_file_data,
+            config.max_file_size,
+            config.buffer_size,
+            config.hf_token,
+            config.chunk_size_mb,
+            config.batch_size,
+        )?;
+
+        loader.load_state_dict(state_dict)?;
+        Ok(loader)
+    }
+
+    fn get_state_summary(&self, py: Python) -> PyResult<Py<PyAny>> {
+        let dict = PyDict::new(py);
+
+        let mut dataset = self.dataset.lock().unwrap();
+        let current_file_index_in_shard = self.calculate_current_file_index();
+
+        let files_processed =
+            self.calculate_files_processed(&mut dataset, current_file_index_in_shard)?;
+        let total_files = dataset.total_files().unwrap_or(0);
+
+        dict.set_item("current_shard", self.current_shard)?;
+        dict.set_item("total_shards", dataset.num_shards())?;
+        dict.set_item("current_file_index", current_file_index_in_shard)?;
+        dict.set_item("files_processed", files_processed)?;
+        dict.set_item("total_files", total_files)?;
+        dict.set_item(
+            "progress_percent",
+            if total_files > 0 {
+                files_processed as f64 / total_files as f64 * 100.0
+            } else {
+                0.0
+            },
+        )?;
+        dict.set_item("batch_size", self.config.batch_size)?;
+
+        Ok(dict.into_any().unbind())
+    }
+
+    /// Create an iterator for a specific range
+    pub fn iter_range(
+        mut slf: PyRefMut<'_, Self>,
+        start: usize,
+        end: usize,
+    ) -> PyResult<PyRangeIterator> {
