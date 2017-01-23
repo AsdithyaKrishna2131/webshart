@@ -428,3 +428,55 @@ impl PyTarDataLoader {
         start: usize,
         end: usize,
     ) -> PyResult<PyRangeIterator> {
+        if start >= end {
+            return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "start must be less than end",
+            ));
+        }
+
+        // Skip to start position
+        slf.skip(start)?;
+
+        Ok(PyRangeIterator {
+            loader: slf.into(),
+            start,
+            end,
+            current: start,
+        })
+    }
+
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<'_, Self>) -> PyResult<Option<PyTarFileEntry>> {
+        slf.next_entry()
+    }
+
+    fn next_batch(&mut self) -> PyResult<Option<Vec<PyTarFileEntry>>> {
+        <Self as BatchIterable<PyTarFileEntry>>::next_batch(self)
+    }
+
+    fn iter_batches(slf: PyRef<'_, Self>) -> PyResult<PyBatchIterator> {
+        if slf.config.batch_size.is_none() {
+            return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "batch_size must be set to use iter_batches()",
+            ));
+        }
+        Ok(PyBatchIterator { loader: slf.into() })
+    }
+
+    fn will_block(&self) -> PyResult<bool> {
+        // If we have entries in buffer, won't block
+        if self.buffer_position < self.entry_buffer.len() {
+            return Ok(false);
+        }
+        let dataset = self.dataset.lock().unwrap();
+        if !dataset.is_remote || dataset.shard_cache.is_none() {
+            return Ok(false);
+        }
+        if self.current_shard >= dataset.num_shards() {
+            return Ok(false);
+        }
+        let shard_name = dataset.shards[self.current_shard]
+            .tar_path
