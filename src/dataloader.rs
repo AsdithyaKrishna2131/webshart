@@ -480,3 +480,55 @@ impl PyTarDataLoader {
         }
         let shard_name = dataset.shards[self.current_shard]
             .tar_path
+            .rsplit('/')
+            .next()
+            .unwrap_or("")
+            .to_string();
+        let cache = dataset.shard_cache.as_ref().unwrap().clone();
+
+        drop(dataset);
+        let is_cached = self.runtime.block_on(cache.is_cached(&shard_name));
+        Ok(!is_cached)
+    }
+
+    fn is_shard_locked(&self, shard_name: &str) -> bool {
+        let dataset = self.dataset.lock().unwrap();
+
+        if let Some(cache) = &dataset.shard_cache {
+            cache.is_shard_locked(shard_name)
+        } else {
+            false
+        }
+    }
+
+    fn prepare_shard_by_name(&self, filename: &str) -> PyResult<bool> {
+        let dataset = self.dataset.lock().unwrap();
+
+        if !dataset.is_remote || dataset.shard_cache.is_none() {
+            return Ok(false);
+        }
+
+        let shard_idx = self.find_shard_by_filename(&dataset, filename)?;
+        let shard = &dataset.shards[shard_idx];
+        let tar_path = shard.tar_path.clone();
+        let shard_name = tar_path.rsplit('/').next().unwrap_or(&tar_path).to_string();
+        let token = dataset.get_hf_token();
+        let cache = dataset.shard_cache.as_ref().unwrap().clone();
+
+        // Drop the dataset lock before any async/await or spawn
+        drop(dataset);
+
+        // Check cache status before spawning
+        let is_cached = self.runtime.block_on({
+            let cache = cache.clone();
+            let shard_name = shard_name.clone();
+            async move { cache.is_cached(&shard_name).await }
+        });
+        if is_cached {
+            return Ok(false);
+        }
+
+        // Clone all data needed for the async block before spawning
+        let runtime = self.runtime.clone();
+        let shard_name_cloned = shard_name.clone();
+        let tar_path_cloned = tar_path.clone();
