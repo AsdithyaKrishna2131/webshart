@@ -793,3 +793,56 @@ impl PyTarDataLoader {
         Ok(started_caching)
     }
 
+    // Getters
+    #[getter]
+    fn num_shards(&self) -> usize {
+        self.dataset.lock().unwrap().num_shards()
+    }
+
+    #[getter]
+    fn current_shard_index(&self) -> usize {
+        self.current_shard
+    }
+
+    #[getter]
+    fn current_shard_filename(&self) -> String {
+        let dataset = self.dataset.lock().unwrap();
+        if self.current_shard < dataset.shards.len() {
+            let shard = &dataset.shards[self.current_shard];
+            shard
+                .tar_path
+                .rsplit('/')
+                .next()
+                .unwrap_or(&shard.tar_path)
+                .to_string()
+        } else {
+            String::new()
+        }
+    }
+
+    #[getter]
+    fn current_file_index(&self) -> usize {
+        self.calculate_current_file_index()
+    }
+
+    #[getter]
+    fn buffer_size(&self) -> usize {
+        self.config.buffer_size
+    }
+
+    #[getter]
+    fn chunk_size_mb(&self) -> usize {
+        self.config.chunk_size_mb
+    }
+
+    #[getter]
+    fn load_file_data(&self) -> bool {
+        self.config.load_file_data
+    }
+
+    #[getter]
+    fn max_file_size(&self) -> u64 {
+        self.config.max_file_size
+    }
+
+    #[getter]
