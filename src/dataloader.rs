@@ -689,3 +689,55 @@ impl PyTarDataLoader {
             let (is_cached, size) = self.runtime.block_on(async {
                 let is_cached = cache.is_cached(&shard_filename).await;
                 let size = cache
+                    .get_cached_file_size(&shard_filename)
+                    .await
+                    .unwrap_or(0);
+                (is_cached, size)
+            });
+            dict.set_item("is_cached", is_cached)?;
+            dict.set_item("cur_filesize", size)?;
+        } else {
+            drop(dataset);
+            dict.set_item("is_cached", true)?; // Local files are always "cached"
+        }
+
+        Ok(dict.into_any().unbind())
+    }
+
+    #[pyo3(signature = (lookahead=5))]
+    fn get_lookahead_cache_status(&self, py: Python, lookahead: usize) -> PyResult<Py<PyAny>> {
+        let dataset = self.dataset.lock().unwrap();
+        let list = PyList::empty(py);
+
+        let start_shard = self.current_shard;
+        let end_shard = (start_shard + lookahead).min(dataset.num_shards());
+
+        for shard_idx in start_shard..end_shard {
+            let shard = &dataset.shards[shard_idx];
+            let dict = PyDict::new(py);
+
+            dict.set_item("index", shard_idx)?;
+            dict.set_item("name", &shard.name)?;
+
+            if dataset.is_remote && dataset.shard_cache.is_some() {
+                let shard_name = shard.tar_path.rsplit('/').next().unwrap_or(&shard.tar_path);
+                let cache = dataset.shard_cache.as_ref().unwrap().clone();
+                let is_cached = self.runtime.block_on(cache.is_cached(shard_name));
+                dict.set_item("is_cached", is_cached)?;
+            } else {
+                dict.set_item("is_cached", true)?;
+            }
+
+            list.append(dict)?;
+        }
+
+        Ok(list.into_any().unbind())
+    }
+
+    #[pyo3(signature = (num_shards=1))]
+    fn prepare_shards_ahead(&self, num_shards: usize) -> PyResult<Vec<String>> {
+        let dataset = self.dataset.lock().unwrap();
+        let mut started_caching = Vec::new();
+
+        if !dataset.is_remote || dataset.shard_cache.is_none() {
+            return Ok(started_caching);
