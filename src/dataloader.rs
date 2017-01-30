@@ -585,3 +585,55 @@ impl PyTarDataLoader {
         // Check cache status before spawning
         let is_cached = self.runtime.block_on({
             let cache = cache.clone();
+            let shard_name = shard_name.clone();
+            async move { cache.is_cached(&shard_name).await }
+        });
+        if is_cached {
+            return Ok(false);
+        }
+
+        // Clone all data needed for the async block before spawning
+        let runtime = self.runtime.clone();
+        let shard_name_cloned = shard_name.clone();
+        let tar_path_cloned = tar_path.clone();
+        let token_cloned = token.clone();
+        let cache_cloned = cache.clone();
+
+        // All clones above are Send, so nothing non-Send is captured
+        runtime.spawn_blocking(move || {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+            rt.block_on(async {
+                match cache_cloned
+                    .cache_shard(&shard_name_cloned, &tar_path_cloned, token_cloned)
+                    .await
+                {
+                    Ok(_) => {
+                        println!("[webshart] Pre-cached shard: {}", shard_name_cloned);
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "[webshart] Failed to pre-cache shard {}: {}",
+                            shard_name_cloned, e
+                        );
+                    }
+                }
+            })
+        });
+
+        Ok(true)
+    }
+
+    /// Get information about which shard will be loaded next
+    fn get_next_shard_info(&self, py: Python) -> PyResult<Option<Py<PyAny>>> {
+        if self.buffer_position < self.entry_buffer.len() {
+            return Ok(None); // Still have buffered entries
+        }
+
+        let dataset = self.dataset.lock().unwrap();
+
+        if self.current_shard >= dataset.num_shards() {
+            return Ok(None); // No more shards
+        }
