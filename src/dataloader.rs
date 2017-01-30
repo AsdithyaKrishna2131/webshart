@@ -532,3 +532,56 @@ impl PyTarDataLoader {
         let runtime = self.runtime.clone();
         let shard_name_cloned = shard_name.clone();
         let tar_path_cloned = tar_path.clone();
+        let token_cloned = token.clone();
+        let cache_cloned = cache.clone();
+
+        // All clones above are Send, so nothing non-Send is captured
+        runtime.spawn_blocking(move || {
+            let rt = tokio::runtime::Builder::new_current_thread()
+                .enable_all()
+                .build()
+                .unwrap();
+            rt.block_on(async {
+                match cache_cloned
+                    .cache_shard(&shard_name_cloned, &tar_path_cloned, token_cloned)
+                    .await
+                {
+                    Ok(_) => {
+                        println!("[webshart] Pre-cached shard: {}", shard_name_cloned);
+                    }
+                    Err(e) => {
+                        eprintln!(
+                            "[webshart] Failed to pre-cache shard {}: {}",
+                            shard_name_cloned, e
+                        );
+                    }
+                }
+            })
+        });
+
+        Ok(true)
+    }
+
+    fn prepare_next_shard(&self) -> PyResult<bool> {
+        let dataset = self.dataset.lock().unwrap();
+
+        if !dataset.is_remote || dataset.shard_cache.is_none() {
+            return Ok(false);
+        }
+
+        if self.current_shard >= dataset.num_shards() {
+            return Ok(false);
+        }
+
+        let shard = &dataset.shards[self.current_shard];
+        let tar_path = shard.tar_path.clone();
+        let shard_name = tar_path.rsplit('/').next().unwrap_or(&tar_path).to_string();
+        let token = dataset.get_hf_token();
+        let cache = dataset.shard_cache.as_ref().unwrap().clone();
+
+        // Drop the dataset lock before any async/await or spawn
+        drop(dataset);
+
+        // Check cache status before spawning
+        let is_cached = self.runtime.block_on({
+            let cache = cache.clone();
