@@ -741,3 +741,55 @@ impl PyTarDataLoader {
 
         if !dataset.is_remote || dataset.shard_cache.is_none() {
             return Ok(started_caching);
+        }
+
+        let start_shard = self.current_shard;
+        let end_shard = (start_shard + num_shards).min(dataset.num_shards());
+
+        for shard_idx in start_shard..end_shard {
+            let shard = &dataset.shards[shard_idx];
+            let tar_path = shard.tar_path.clone();
+            let shard_name = tar_path.rsplit('/').next().unwrap_or(&tar_path).to_string();
+            let token = dataset.get_hf_token();
+            let cache = dataset.shard_cache.as_ref().unwrap().clone();
+
+            // Check if already cached
+            let is_cached = self.runtime.block_on(cache.is_cached(&shard_name));
+            if !is_cached {
+                // Spawn async task to cache the shard
+                let runtime = self.runtime.clone();
+                let shard_name_clone = shard_name.clone();
+                let tar_path_clone = tar_path.clone();
+                let token_clone = token.clone();
+                let cache_clone = cache.clone();
+                runtime.spawn_blocking(move || {
+                    let rt = tokio::runtime::Builder::new_current_thread()
+                        .enable_all()
+                        .build()
+                        .unwrap();
+                    rt.block_on(async {
+                        match cache_clone
+                            .cache_shard(&shard_name_clone, &tar_path_clone, token_clone)
+                            .await
+                        {
+                            Ok(_) => {
+                                println!("[webshart] Pre-cached shard: {}", shard_name_clone);
+                            }
+                            Err(e) => {
+                                eprintln!(
+                                    "[webshart] Failed to pre-cache shard {}: {}",
+                                    shard_name_clone, e
+                                );
+                            }
+                        }
+                    })
+                });
+
+                started_caching.push(shard_name);
+            }
+        }
+
+        drop(dataset);
+        Ok(started_caching)
+    }
+
