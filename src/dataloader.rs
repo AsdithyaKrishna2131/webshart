@@ -637,3 +637,55 @@ impl PyTarDataLoader {
         if self.current_shard >= dataset.num_shards() {
             return Ok(None); // No more shards
         }
+
+        let shard = &dataset.shards[self.current_shard];
+        let dict = PyDict::new(py);
+
+        dict.set_item("index", self.current_shard)?;
+        dict.set_item("name", &shard.name)?;
+        dict.set_item("tar_path", &shard.tar_path)?;
+
+        if dataset.is_remote && dataset.shard_cache.is_some() {
+            let shard_name = shard
+                .tar_path
+                .rsplit('/')
+                .next()
+                .unwrap_or(&shard.tar_path)
+                .to_string();
+            let cache = dataset.shard_cache.as_ref().unwrap().clone();
+            drop(dataset);
+
+            let is_cached = self.runtime.block_on(cache.is_cached(&shard_name));
+            dict.set_item("is_cached", is_cached)?;
+        } else {
+            dict.set_item("is_cached", true)?; // Local files are always "cached"
+        }
+
+        Ok(Some(dict.into_any().unbind()))
+    }
+
+    /// Get information about a specific shard's cache status
+    fn get_shard_cache_status(&self, py: Python, filename: &str) -> PyResult<Py<PyAny>> {
+        let dataset = self.dataset.lock().unwrap();
+
+        let shard_idx = self.find_shard_by_filename(&dataset, filename)?;
+        let shard = &dataset.shards[shard_idx];
+
+        let dict = PyDict::new(py);
+        dict.set_item("index", shard_idx)?;
+        dict.set_item("name", &shard.name)?;
+        dict.set_item("tar_path", &shard.tar_path)?;
+
+        if dataset.is_remote && dataset.shard_cache.is_some() {
+            let shard_filename = shard
+                .tar_path
+                .rsplit('/')
+                .next()
+                .unwrap_or(&shard.tar_path)
+                .to_string();
+            let cache = dataset.shard_cache.as_ref().unwrap().clone();
+            drop(dataset);
+
+            let (is_cached, size) = self.runtime.block_on(async {
+                let is_cached = cache.is_cached(&shard_filename).await;
+                let size = cache
