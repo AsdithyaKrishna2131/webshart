@@ -898,3 +898,55 @@ impl PyTarDataLoader {
         let mut dataset = self.dataset.lock().unwrap();
         ensure_shard_metadata_with_retry(&mut dataset, shard_idx)?;
 
+        let shard = dataset.shards.get(shard_idx).ok_or_else(|| {
+            WebshartError::InvalidShardFormat(format!("Shard index {} out of range", shard_idx))
+        })?;
+
+        let dict = PyDict::new(py);
+
+        if let Some(metadata) = &shard.metadata {
+            for (filename, file_info) in metadata
+                .iter_files()
+                .filter(|(_, file_info)| file_info.length <= self.config.max_file_size)
+            {
+                let file_dict = pythonize::pythonize(py, &file_info)?;
+                dict.set_item(filename, file_dict)?;
+            }
+        }
+
+        Ok(dict.into_any().unbind())
+    }
+
+    /// List visible samples with their stable, unfiltered sample indices.
+    fn list_samples_in_shard(&self, shard_idx: usize, py: Python) -> PyResult<Py<PyAny>> {
+        let mut dataset = self.dataset.lock().unwrap();
+        ensure_shard_metadata_with_retry(&mut dataset, shard_idx)?;
+
+        let shard = dataset.shards.get(shard_idx).ok_or_else(|| {
+            WebshartError::InvalidShardFormat(format!("Shard index {} out of range", shard_idx))
+        })?;
+
+        let list = PyList::empty(py);
+        if let Some(metadata) = &shard.metadata {
+            for (sample_idx, (filename, _)) in metadata
+                .sample_range(0, metadata.num_samples())
+                .into_iter()
+                .enumerate()
+                .filter(|(_, (_, file_info))| file_info.length <= self.config.max_file_size)
+            {
+                let sample = PyDict::new(py);
+                sample.set_item("sample_idx", sample_idx)?;
+                sample.set_item("filename", filename)?;
+                list.append(sample)?;
+            }
+        }
+
+        Ok(list.into_any().unbind())
+    }
+
+    /// Load a logical sample, or return None when it exceeds max_file_size.
+    fn load_sample(&self, shard_idx: usize, sample_idx: usize) -> PyResult<Option<PyTarFileEntry>> {
+        let mut dataset = self.dataset.lock().unwrap();
+        ensure_shard_metadata_with_retry(&mut dataset, shard_idx)?;
+
+        let shard = dataset.shards.get(shard_idx).ok_or_else(|| {
