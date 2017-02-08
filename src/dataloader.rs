@@ -846,3 +846,55 @@ impl PyTarDataLoader {
     }
 
     #[getter]
+    fn batch_size(&self) -> Option<usize> {
+        self.config.batch_size
+    }
+
+    // Setters
+    #[setter]
+    fn set_buffer_size(&mut self, size: usize) {
+        self.config.buffer_size = size.max(1);
+        if self.entry_buffer.capacity() < self.config.buffer_size {
+            self.entry_buffer
+                .reserve(self.config.buffer_size - self.entry_buffer.capacity());
+        }
+    }
+
+    #[setter]
+    fn set_chunk_size_mb(&mut self, size_mb: usize) {
+        self.config.chunk_size_mb = size_mb.max(1);
+    }
+
+    #[setter]
+    fn set_batch_size(&mut self, batch_size: Option<usize>) {
+        self.config.batch_size = batch_size;
+    }
+
+    fn set_ranges(&mut self, ranges: Vec<(usize, usize)>) -> PyResult<()> {
+        // Validate ranges
+        for (start, end) in &ranges {
+            if start >= end {
+                return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(format!(
+                    "Invalid range: start {} must be less than end {}",
+                    start, end
+                )));
+            }
+        }
+
+        self.ranges = Some(ranges);
+        self.current_range_idx = 0;
+
+        // Jump to first range start
+        if let Some(ranges) = &self.ranges {
+            if !ranges.is_empty() {
+                self.skip(ranges[0].0)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn get_metadata(&self, shard_idx: usize, py: Python) -> PyResult<Py<PyAny>> {
+        let mut dataset = self.dataset.lock().unwrap();
+        ensure_shard_metadata_with_retry(&mut dataset, shard_idx)?;
+
