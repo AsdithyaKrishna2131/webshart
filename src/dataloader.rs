@@ -950,3 +950,55 @@ impl PyTarDataLoader {
         ensure_shard_metadata_with_retry(&mut dataset, shard_idx)?;
 
         let shard = dataset.shards.get(shard_idx).ok_or_else(|| {
+            WebshartError::InvalidShardFormat(format!("Shard index {} out of range", shard_idx))
+        })?;
+
+        let metadata = shard
+            .metadata
+            .as_ref()
+            .ok_or_else(|| WebshartError::MetadataNotFound("Metadata not loaded".to_string()))?;
+
+        let (filename, file_info) = metadata.get_sample_by_index(sample_idx).ok_or_else(|| {
+            WebshartError::InvalidShardFormat(format!(
+                "Sample index {} out of range for shard {}",
+                sample_idx, shard_idx
+            ))
+        })?;
+        let txt_sidecar = metadata
+            .get_txt_sidecar_by_sample_index(sample_idx)
+            .map(|(_, file_info)| file_info);
+
+        let tar_path = shard.tar_path.clone();
+        let is_remote = dataset.is_remote;
+        let token = if is_remote {
+            dataset.get_hf_token()
+        } else {
+            None
+        };
+        drop(dataset);
+
+        if file_info.length > self.config.max_file_size {
+            return Ok(None);
+        }
+
+        let data = if self.config.load_file_data {
+            self.load_single_file_data(&tar_path, &file_info, is_remote, token.clone())?
+        } else {
+            Vec::new()
+        };
+
+        let mut entry = create_tar_entry(
+            filename,
+            &file_info,
+            data,
+            Some(shard_idx),
+            Some(sample_idx),
+        );
+        entry.json_data =
+            self.load_json_sidecar_bytes(&tar_path, &file_info, is_remote, token.clone())?;
+        entry.captions = self.load_caption_value(
+            &tar_path,
+            &file_info,
+            txt_sidecar.as_ref(),
+            entry.json_data.as_deref(),
+            is_remote,
