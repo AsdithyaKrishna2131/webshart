@@ -1054,3 +1054,56 @@ impl PyTarDataLoader {
 
     /// Fold sidecar captions into normal webshart metadata JSON files.
     #[pyo3(signature = (destination=None, shard_indices=None))]
+    fn coalesce_caption_metadata(
+        &self,
+        py: Python,
+        destination: Option<String>,
+        shard_indices: Option<Vec<usize>>,
+    ) -> PyResult<Py<PyAny>> {
+        let (num_shards, cache_dir) = {
+            let dataset = self.dataset.lock().unwrap();
+            (dataset.num_shards(), dataset.metadata_cache_dir())
+        };
+        let persist_to_cache = destination.is_none();
+        let destination = match destination {
+            Some(path) => Path::new(&path).to_path_buf(),
+            None => cache_dir.ok_or_else(|| {
+                pyo3::exceptions::PyValueError::new_err(
+                    "enable_metadata_cache() first or provide destination",
+                )
+            })?,
+        };
+        let shard_indices = shard_indices.unwrap_or_else(|| (0..num_shards).collect());
+        let mut output_paths = Vec::with_capacity(shard_indices.len());
+        let mut captioned_samples = 0usize;
+        let mut coalesced_samples = 0usize;
+
+        for shard_idx in shard_indices {
+            let (shard_name, tar_path, is_remote, token, mut metadata) = {
+                let mut dataset = self.dataset.lock().unwrap();
+                ensure_shard_metadata_with_retry(&mut dataset, shard_idx)?;
+                let shard = dataset.shards.get(shard_idx).ok_or_else(|| {
+                    WebshartError::InvalidShardFormat(format!(
+                        "Shard index {} out of range",
+                        shard_idx
+                    ))
+                })?;
+                let metadata = shard.metadata.clone().ok_or_else(|| {
+                    WebshartError::MetadataNotFound("Metadata not loaded".to_string())
+                })?;
+                (
+                    shard.name.clone(),
+                    shard.tar_path.clone(),
+                    dataset.is_remote,
+                    dataset.get_hf_token(),
+                    metadata,
+                )
+            };
+
+            for sample_idx in 0..metadata.num_samples() {
+                let Some((_filename, file_info)) = metadata.get_sample_by_index(sample_idx) else {
+                    continue;
+                };
+                let had_caption = file_info.captions.is_some();
+                let txt_sidecar = metadata
+                    .get_txt_sidecar_by_sample_index(sample_idx)
