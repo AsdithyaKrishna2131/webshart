@@ -1107,3 +1107,55 @@ impl PyTarDataLoader {
                 let had_caption = file_info.captions.is_some();
                 let txt_sidecar = metadata
                     .get_txt_sidecar_by_sample_index(sample_idx)
+                    .map(|(_, file_info)| file_info);
+                if let Some(captions) = self.load_caption_value(
+                    &tar_path,
+                    &file_info,
+                    txt_sidecar.as_ref(),
+                    None,
+                    is_remote,
+                    token.clone(),
+                )? {
+                    captioned_samples += 1;
+                    coalesced_samples += usize::from(!had_caption);
+                    metadata.set_sample_captions(sample_idx, captions);
+                }
+            }
+
+            let output_path = Self::metadata_output_path(&destination, &shard_name)?;
+            if persist_to_cache {
+                self.dataset
+                    .lock()
+                    .unwrap()
+                    .replace_shard_metadata(shard_idx, metadata, true)?;
+            } else {
+                Self::write_metadata_file(&output_path, &metadata)?;
+                self.dataset
+                    .lock()
+                    .unwrap()
+                    .replace_shard_metadata(shard_idx, metadata, false)?;
+            }
+            output_paths.push(output_path.to_string_lossy().to_string());
+        }
+
+        let result = PyDict::new(py);
+        result.set_item("shards", output_paths.len())?;
+        result.set_item("captioned_samples", captioned_samples)?;
+        result.set_item("coalesced_samples", coalesced_samples)?;
+        result.set_item("files", output_paths)?;
+        Ok(result.into_any().unbind())
+    }
+
+    fn load_sample_json(
+        &self,
+        py: Python,
+        shard_idx: usize,
+        sample_idx: usize,
+    ) -> PyResult<Option<Py<PyBytes>>> {
+        let Some(entry) = self.load_sample(shard_idx, sample_idx)? else {
+            return Ok(None);
+        };
+        Ok(entry
+            .json_data
+            .as_ref()
+            .map(|data| PyBytes::new(py, data).unbind()))
