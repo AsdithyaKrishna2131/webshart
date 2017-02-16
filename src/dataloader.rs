@@ -1002,3 +1002,55 @@ impl PyTarDataLoader {
             txt_sidecar.as_ref(),
             entry.json_data.as_deref(),
             is_remote,
+            token,
+        )?;
+        Ok(Some(entry))
+    }
+
+    /// Load the first caption for a logical sample from metadata or a paired sidecar.
+    fn load_caption(&self, shard_idx: usize, sample_idx: usize) -> PyResult<Option<String>> {
+        let mut dataset = self.dataset.lock().unwrap();
+        ensure_shard_metadata_with_retry(&mut dataset, shard_idx)?;
+
+        let shard = dataset.shards.get(shard_idx).ok_or_else(|| {
+            WebshartError::InvalidShardFormat(format!("Shard index {} out of range", shard_idx))
+        })?;
+        let metadata = shard
+            .metadata
+            .as_ref()
+            .ok_or_else(|| WebshartError::MetadataNotFound("Metadata not loaded".to_string()))?;
+        let (_filename, file_info) = metadata.get_sample_by_index(sample_idx).ok_or_else(|| {
+            WebshartError::InvalidShardFormat(format!(
+                "Sample index {} out of range for shard {}",
+                sample_idx, shard_idx
+            ))
+        })?;
+        let txt_sidecar = metadata
+            .get_txt_sidecar_by_sample_index(sample_idx)
+            .map(|(_, file_info)| file_info);
+        let tar_path = shard.tar_path.clone();
+        let is_remote = dataset.is_remote;
+        let token = if is_remote {
+            dataset.get_hf_token()
+        } else {
+            None
+        };
+        drop(dataset);
+
+        if file_info.length > self.config.max_file_size {
+            return Ok(None);
+        }
+
+        let captions = self.load_caption_value(
+            &tar_path,
+            &file_info,
+            txt_sidecar.as_ref(),
+            None,
+            is_remote,
+            token,
+        )?;
+        Ok(captions.and_then(|value| value.first().map(str::to_owned)))
+    }
+
+    /// Fold sidecar captions into normal webshart metadata JSON files.
+    #[pyo3(signature = (destination=None, shard_indices=None))]
