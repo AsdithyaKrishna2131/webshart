@@ -1159,3 +1159,55 @@ impl PyTarDataLoader {
             .json_data
             .as_ref()
             .map(|data| PyBytes::new(py, data).unbind()))
+    }
+
+    fn reset(&mut self) -> PyResult<()> {
+        self.current_shard = 0;
+        self.entry_buffer.clear();
+        self.buffer_position = 0;
+        self.next_file_to_load = 0;
+        Ok(())
+    }
+
+    fn skip(&mut self, idx: usize) -> PyResult<()> {
+        let total_files = self.dataset.lock().unwrap().total_files().map_err(|e| {
+            WebshartError::DiscoveryFailed(format!("Failed to get total files: {}", e))
+        })?;
+
+        if idx > total_files {
+            return Err(WebshartError::InvalidShardFormat(format!(
+                "File index {} out of range",
+                idx
+            ))
+            .into());
+        }
+
+        self.entry_buffer.clear();
+        self.buffer_position = 0;
+
+        let (target_shard, remaining) = self.find_shard_for_index(idx)?;
+
+        self.current_shard = target_shard;
+        self.next_file_to_load = remaining;
+
+        Ok(())
+    }
+
+    #[pyo3(signature = (shard_idx=None, filename=None, cursor_idx=None))]
+    fn shard(
+        &mut self,
+        shard_idx: Option<usize>,
+        filename: Option<String>,
+        cursor_idx: Option<usize>,
+    ) -> PyResult<()> {
+        self.entry_buffer.clear();
+        self.buffer_position = 0;
+
+        let dataset = self.dataset.lock().unwrap();
+
+        let target_shard = if let Some(idx) = shard_idx {
+            idx
+        } else if let Some(fname) = filename {
+            self.find_shard_by_filename(&dataset, &fname)?
+        } else {
+            return Err(WebshartError::InvalidShardFormat(
