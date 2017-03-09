@@ -1316,3 +1316,55 @@ impl PyTarDataLoader {
     fn metadata_output_path(destination: &Path, shard_name: &str) -> Result<PathBuf> {
         let relative = Path::new(shard_name);
         if relative.as_os_str().is_empty()
+            || relative
+                .components()
+                .any(|component| !matches!(component, Component::Normal(_)))
+        {
+            return Err(WebshartError::InvalidShardFormat(format!(
+                "Unsafe shard name for metadata export: {shard_name}"
+            )));
+        }
+        Ok(destination.join(relative).with_extension("json"))
+    }
+
+    fn write_metadata_file(path: &Path, metadata: &ShardMetadata) -> Result<()> {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
+        let temp_path = path.with_extension("json.tmp");
+        fs::write(&temp_path, serde_json::to_vec_pretty(metadata)?)?;
+        fs::rename(temp_path, path)?;
+        Ok(())
+    }
+
+    fn caption_from_txt_bytes(data: Vec<u8>) -> PyResult<Option<CaptionValue>> {
+        let caption = String::from_utf8(data).map_err(|error| {
+            WebshartError::InvalidShardFormat(format!(
+                "Caption sidecar is not valid UTF-8: {error}"
+            ))
+        })?;
+        let caption = caption.trim();
+        if caption.is_empty() {
+            Ok(None)
+        } else {
+            Ok(Some(CaptionValue::Single(caption.to_string())))
+        }
+    }
+
+    fn load_caption_value(
+        &self,
+        tar_path: &str,
+        file_info: &FileInfo,
+        txt_sidecar: Option<&FileInfo>,
+        json_data: Option<&[u8]>,
+        is_remote: bool,
+        token: Option<String>,
+    ) -> PyResult<Option<CaptionValue>> {
+        if let Some(captions) = &file_info.captions {
+            return Ok(Some(captions.clone()));
+        }
+
+        if let Some(txt_info) = txt_sidecar {
+            if txt_info.length > self.config.max_file_size {
+                return Ok(None);
+            }
