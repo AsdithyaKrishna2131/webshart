@@ -1263,3 +1263,56 @@ impl PyTarDataLoader {
     pub fn list_shard_sample_aspect_buckets(
         &self,
         py: Python,
+        shard_indices: Vec<usize>,
+        key: &str,
+        target_pixel_area: Option<u32>,
+        target_resolution_multiple: u32,
+        round_to: Option<usize>,
+    ) -> PyResult<Vec<Py<PyAny>>> {
+        let results = self.get_sample_aspect_buckets_for_shards(
+            shard_indices,
+            key,
+            target_pixel_area,
+            Some(target_resolution_multiple),
+            round_to,
+        )?;
+
+        let py_results: Vec<Py<PyAny>> = results
+            .into_iter()
+            .map(|bucket| self.aspect_buckets_to_py_dict(py, bucket))
+            .collect::<PyResult<Vec<_>>>()?;
+
+        Ok(py_results)
+    }
+
+    #[pyo3(signature = (key=None, target_pixel_area=None, target_resolution_multiple=64, round_to=Some(2)))]
+    fn list_all_aspect_buckets(
+        slf: PyRef<'_, Self>,
+        py: Python,
+        key: Option<&str>,
+        target_pixel_area: Option<u32>,
+        target_resolution_multiple: u32,
+        round_to: Option<usize>,
+    ) -> PyResult<Py<PyAny>> {
+        let key_str = key.unwrap_or("aspect");
+        let _key_type = BucketKeyType::parse(key_str)?;
+
+        let num_shards = slf.num_shards();
+        let iterator = AspectBucketIterator {
+            loader: slf.into(),
+            key_type: key_str.to_string(),
+            target_pixel_area,
+            target_resolution_multiple,
+            round_to,
+            current_shard: 0,
+            num_shards,
+        };
+
+        Py::new(py, iterator).map(Py::into_any)
+    }
+}
+
+impl PyTarDataLoader {
+    fn metadata_output_path(destination: &Path, shard_name: &str) -> Result<PathBuf> {
+        let relative = Path::new(shard_name);
+        if relative.as_os_str().is_empty()
