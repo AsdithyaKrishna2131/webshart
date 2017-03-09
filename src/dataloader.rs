@@ -1368,3 +1368,55 @@ impl PyTarDataLoader {
             if txt_info.length > self.config.max_file_size {
                 return Ok(None);
             }
+            let data = self.load_single_file_data(tar_path, txt_info, is_remote, token)?;
+            return Self::caption_from_txt_bytes(data);
+        }
+
+        let owned_json_data;
+        let json_data = if let Some(data) = json_data {
+            Some(data)
+        } else {
+            owned_json_data =
+                self.load_json_sidecar_bytes(tar_path, file_info, is_remote, token)?;
+            owned_json_data.as_deref()
+        };
+
+        Ok(json_data
+            .and_then(|data| serde_json::from_slice(data).ok())
+            .as_ref()
+            .and_then(ShardMetadata::extract_caption_value))
+    }
+
+    pub(crate) fn load_file_by_info(
+        &self,
+        shard_idx: usize,
+        file_path: &str,
+        file_info: &FileInfo,
+    ) -> PyResult<Option<PyTarFileEntry>> {
+        let dataset = self.dataset.lock().unwrap();
+        let shard = dataset.shards.get(shard_idx).ok_or_else(|| {
+            WebshartError::InvalidShardFormat("Shard index out of range".to_string())
+        })?;
+
+        let tar_path = shard.tar_path.clone();
+        let is_remote = dataset.is_remote;
+        let token = if is_remote {
+            dataset.get_hf_token()
+        } else {
+            None
+        };
+
+        drop(dataset);
+
+        if file_info.length > self.config.max_file_size {
+            return Ok(None);
+        }
+
+        let data = if self.config.load_file_data {
+            self.load_single_file_data(&tar_path, file_info, is_remote, token)?
+        } else {
+            Vec::new()
+        };
+
+        Ok(Some(create_tar_entry(
+            file_path.to_string(),
