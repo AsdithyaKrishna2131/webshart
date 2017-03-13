@@ -1577,3 +1577,55 @@ impl PyTarDataLoader {
         }
         files_processed += current_file_index_in_shard;
         Ok(files_processed)
+    }
+
+    fn calculate_global_file_index(&self) -> PyResult<usize> {
+        let mut dataset = self.dataset.lock().unwrap();
+        let current_file_index_in_shard = self.calculate_current_file_index();
+        self.calculate_files_processed(&mut dataset, current_file_index_in_shard)
+    }
+
+    fn find_shard_for_index(&self, idx: usize) -> PyResult<(usize, usize)> {
+        let mut remaining = idx;
+        let mut dataset = self.dataset.lock().unwrap();
+        let num_shards = dataset.num_shards();
+
+        for shard_idx in 0..num_shards {
+            if dataset.shards[shard_idx].metadata.is_none() {
+                ensure_shard_metadata_with_retry(&mut *dataset, shard_idx)?;
+            }
+
+            if let Some(metadata) = &dataset.shards[shard_idx].metadata {
+                let num_files = metadata.num_files();
+                if remaining < num_files {
+                    return Ok((shard_idx, remaining));
+                }
+                remaining -= num_files;
+            } else {
+                return Err(WebshartError::MetadataNotFound(format!(
+                    "Metadata for shard {} could not be loaded",
+                    shard_idx
+                ))
+                .into());
+            }
+        }
+
+        Ok((num_shards.saturating_sub(1), remaining))
+    }
+
+    fn find_shard_by_filename(
+        &self,
+        dataset: &DiscoveredDataset,
+        filename: &str,
+    ) -> PyResult<usize> {
+        let fname_no_ext = filename.trim_end_matches(".tar");
+        dataset
+            .shards
+            .iter()
+            .position(|s| {
+                let shard_name = s
+                    .tar_path
+                    .rsplit('/')
+                    .next()
+                    .unwrap_or(&s.tar_path)
+                    .trim_end_matches(".tar");
