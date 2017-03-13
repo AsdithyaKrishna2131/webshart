@@ -1420,3 +1420,55 @@ impl PyTarDataLoader {
 
         Ok(Some(create_tar_entry(
             file_path.to_string(),
+            file_info,
+            data,
+            Some(shard_idx),
+            None,
+        )))
+    }
+
+    pub(crate) fn get_shard_aspect_buckets_internal(
+        &self,
+        shard_idx: usize,
+        key: &str,
+        target_pixel_area: Option<u32>,
+        target_resolution_multiple: Option<u32>,
+        round_to: Option<usize>,
+    ) -> PyResult<AspectBuckets> {
+        let key_type = BucketKeyType::parse(key)?;
+        let mut dataset = self.dataset.lock().unwrap();
+
+        ensure_shard_metadata_with_retry(&mut dataset, shard_idx)?;
+
+        let shard = dataset.shards.get(shard_idx).ok_or_else(|| {
+            WebshartError::InvalidShardFormat(format!("Shard index {} out of range", shard_idx))
+        })?;
+
+        let shard_name = shard.tar_path.clone();
+        let metadata = shard
+            .metadata
+            .as_ref()
+            .ok_or_else(|| WebshartError::MetadataNotFound("Metadata not loaded".to_string()))?;
+
+        let mut buckets: BTreeMap<String, Vec<AspectBucketEntry>> = BTreeMap::new();
+
+        for (filename, file_info) in metadata.iter_files() {
+            if file_info.length > self.config.max_file_size {
+                continue;
+            }
+            if let (Some(width), Some(height)) = (file_info.width, file_info.height) {
+                let target_resolution_multiple = target_resolution_multiple.unwrap_or(64);
+
+                let (bucket_key, original_size) = calculate_bucket_key(
+                    &key_type,
+                    width,
+                    height,
+                    file_info.aspect,
+                    target_pixel_area,
+                    target_resolution_multiple,
+                    round_to,
+                );
+
+                buckets
+                    .entry(bucket_key)
+                    .or_insert_with(Vec::new)
