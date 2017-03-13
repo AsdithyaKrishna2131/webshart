@@ -1524,3 +1524,56 @@ impl PyTarDataLoader {
             if let (Some(width), Some(height)) = (file_info.width, file_info.height) {
                 let target_resolution_multiple = target_resolution_multiple.unwrap_or(64);
 
+                let (bucket_key, original_size) = calculate_bucket_key(
+                    &key_type,
+                    width,
+                    height,
+                    file_info.aspect,
+                    target_pixel_area,
+                    target_resolution_multiple,
+                    round_to,
+                );
+
+                buckets
+                    .entry(bucket_key)
+                    .or_insert_with(Vec::new)
+                    .push(AspectBucketEntry {
+                        filename,
+                        file_info,
+                        original_size,
+                        sample_idx: Some(sample_idx),
+                    });
+            }
+        }
+
+        Ok(AspectBuckets {
+            buckets,
+            shard_idx,
+            shard_name,
+        })
+    }
+
+    // Private helper methods
+    fn calculate_current_file_index(&self) -> usize {
+        self.entry_buffer
+            .get(self.buffer_position)
+            .and_then(|entry| entry.file_idx)
+            .unwrap_or(self.next_file_to_load)
+    }
+
+    fn calculate_files_processed(
+        &self,
+        dataset: &mut DiscoveredDataset,
+        current_file_index_in_shard: usize,
+    ) -> PyResult<usize> {
+        let mut files_processed = 0;
+        for i in 0..self.current_shard {
+            ensure_shard_metadata_with_retry(dataset, i)?;
+            if let Some(shard) = dataset.shards.get(i) {
+                if let Some(metadata) = &shard.metadata {
+                    files_processed += metadata.num_files();
+                }
+            }
+        }
+        files_processed += current_file_index_in_shard;
+        Ok(files_processed)
