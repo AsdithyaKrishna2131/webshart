@@ -1629,3 +1629,55 @@ impl PyTarDataLoader {
                     .next()
                     .unwrap_or(&s.tar_path)
                     .trim_end_matches(".tar");
+                shard_name == fname_no_ext
+            })
+            .ok_or_else(|| {
+                WebshartError::InvalidShardFormat(format!(
+                    "Shard with filename '{}' not found",
+                    filename
+                ))
+                .into()
+            })
+    }
+
+    fn determine_source_from_state_dict<'py>(
+        py: Python<'py>,
+        state_dict: &Bound<'py, PyDict>,
+        dataset_or_path: Option<&Bound<'py, PyAny>>,
+    ) -> PyResult<Py<PyAny>> {
+        if let Some(dataset_or_path) = dataset_or_path {
+            return Ok(dataset_or_path.clone().unbind());
+        }
+
+        let source_str = match state_dict.get_item("source")? {
+            Some(item) => item.extract::<String>()?,
+            None => {
+                return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                    "No dataset_or_path provided and no source in state_dict",
+                ));
+            }
+        };
+
+        let metadata_source = match state_dict.get_item("metadata_source")? {
+            Some(item) => item.extract::<Option<String>>().unwrap_or(None),
+            None => None,
+        };
+
+        let hf_token = match state_dict.get_item("hf_token")? {
+            Some(item) => item.extract::<Option<String>>().unwrap_or(None),
+            None => None,
+        };
+
+        if metadata_source.is_some() {
+            let discovery = DatasetDiscovery::new()
+                .with_optional_token(hf_token)
+                .with_metadata_source(metadata_source);
+
+            let dataset = if Path::new(&source_str).exists() {
+                discovery.discover_local(Path::new(&source_str))?
+            } else {
+                py.detach(|| {
+                    Runtime::new()?.block_on(discovery.discover_huggingface(&source_str, None))
+                })?
+            };
+
