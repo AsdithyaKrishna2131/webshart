@@ -1681,3 +1681,55 @@ impl PyTarDataLoader {
                 })?
             };
 
+            let py_dataset = Py::new(py, PyDiscoveredDataset { inner: dataset })?;
+            return Ok(py_dataset.into_any());
+        }
+
+        Ok(PyString::new(py, &source_str).into_any().unbind())
+    }
+
+    fn get_aspect_buckets_for_shards(
+        &self,
+        shard_indices: Vec<usize>,
+        key: &str,
+        target_pixel_area: Option<u32>,
+        target_resolution_multiple: Option<u32>,
+        round_to: Option<usize>,
+    ) -> PyResult<Vec<AspectBuckets>> {
+        if tokio::runtime::Handle::try_current().is_ok() {
+            tokio::task::block_in_place(|| {
+                let rt = tokio::runtime::Handle::current();
+                rt.block_on(async {
+                    let mut results = Vec::new();
+
+                    for shard_idx in shard_indices {
+                        match self.get_shard_aspect_buckets_internal(
+                            shard_idx,
+                            key,
+                            target_pixel_area,
+                            target_resolution_multiple,
+                            round_to,
+                        ) {
+                            Ok(buckets) => results.push(buckets),
+                            Err(e) => return Err(e),
+                        }
+                    }
+
+                    Ok(results)
+                })
+            })
+        } else {
+            self.runtime.block_on(async {
+                let mut results = Vec::new();
+
+                for shard_idx in shard_indices {
+                    match self.get_shard_aspect_buckets_internal(
+                        shard_idx,
+                        key,
+                        target_pixel_area,
+                        target_resolution_multiple,
+                        round_to,
+                    ) {
+                        Ok(buckets) => results.push(buckets),
+                        Err(e) => return Err(e),
+                    }
