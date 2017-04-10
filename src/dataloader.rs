@@ -1785,3 +1785,56 @@ impl PyTarDataLoader {
                         Ok(buckets) => results.push(buckets),
                         Err(e) => return Err(e),
                     }
+                }
+
+                Ok(results)
+            })
+        }
+    }
+
+    fn aspect_buckets_to_py_dict(&self, py: Python, bucket: AspectBuckets) -> PyResult<Py<PyAny>> {
+        let dict = PyDict::new(py);
+        dict.set_item("shard_idx", bucket.shard_idx)?;
+        dict.set_item("shard_name", bucket.shard_name)?;
+
+        let buckets_dict = PyDict::new(py);
+        for (key, files) in bucket.buckets {
+            let files_list = PyList::new(
+                py,
+                files.into_iter().map(|entry| {
+                    let file_dict = PyDict::new(py);
+                    file_dict.set_item("filename", entry.filename).unwrap();
+                    file_dict
+                        .set_item("offset", entry.file_info.offset)
+                        .unwrap();
+                    file_dict.set_item("size", entry.file_info.length).unwrap();
+                    if let Some(sample_idx) = entry.sample_idx {
+                        file_dict.set_item("sample_idx", sample_idx).unwrap();
+                    }
+                    if let Some(w) = entry.file_info.width {
+                        file_dict.set_item("width", w).unwrap();
+                    }
+                    if let Some(h) = entry.file_info.height {
+                        file_dict.set_item("height", h).unwrap();
+                    }
+                    if let Some(a) = entry.file_info.aspect {
+                        file_dict.set_item("aspect", a).unwrap();
+                    }
+                    if let Some((orig_w, orig_h)) = entry.original_size {
+                        let orig_list = PyList::new(py, [orig_w, orig_h]).unwrap();
+                        file_dict.set_item("original_size", orig_list).unwrap();
+                    }
+                    file_dict
+                }),
+            )?;
+            buckets_dict.set_item(key, files_list)?;
+        }
+
+        dict.set_item("buckets", buckets_dict)?;
+        Ok(dict.into_any().unbind())
+    }
+
+    fn load_single_file_data(
+        &self,
+        tar_path: &str,
+        file_info: &FileInfo,
