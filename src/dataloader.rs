@@ -1890,3 +1890,55 @@ impl PyTarDataLoader {
                 offset,
                 length,
                 sha256: None,
+                width: None,
+                height: None,
+                aspect: None,
+                json_path: None,
+                json_offset: None,
+                json_length: None,
+                captions: None,
+                json_metadata: None,
+            };
+
+            let data = self.load_single_file_data(tar_path, &json_info, is_remote, token)?;
+            Ok(Some(data))
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn next_entry(&mut self) -> PyResult<Option<PyTarFileEntry>> {
+        if let Some(ranges) = &self.ranges {
+            // Check if we're within current range
+            let current_idx = self.calculate_global_file_index()?;
+
+            if self.current_range_idx >= ranges.len() {
+                return Ok(None);
+            }
+
+            let (_, range_end) = ranges[self.current_range_idx];
+
+            // If we've exceeded current range, move to next
+            if current_idx >= range_end {
+                self.current_range_idx += 1;
+
+                // Skip to next range start if available
+                if self.current_range_idx < ranges.len() {
+                    let (next_start, _) = ranges[self.current_range_idx];
+                    self.skip(next_start)?;
+                } else {
+                    return Ok(None);
+                }
+            }
+        }
+        if self.buffer_position < self.entry_buffer.len() {
+            return Ok(self.take_buffered_entry());
+        }
+
+        self.refill_buffer()?;
+
+        if self.buffer_position < self.entry_buffer.len() {
+            Ok(self.take_buffered_entry())
+        } else {
+            Ok(None)
+        }
