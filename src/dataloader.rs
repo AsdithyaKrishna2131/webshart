@@ -1838,3 +1838,55 @@ impl PyTarDataLoader {
         &self,
         tar_path: &str,
         file_info: &FileInfo,
+        is_remote: bool,
+        token: Option<String>,
+    ) -> Result<Vec<u8>> {
+        let dataset = self.dataset.lock().unwrap();
+
+        // If we have a shard cache and this is remote, try to get cached version
+        if is_remote && dataset.shard_cache.is_some() {
+            let shard_name = tar_path.rsplit('/').next().unwrap_or(tar_path);
+            let cache = dataset.shard_cache.as_ref().unwrap().clone();
+            drop(dataset); // Release lock before async operation
+
+            // Cache and acquire the read lock without an eviction race between
+            // those operations.
+            if let Ok((cached_path, _lock)) = self.runtime.block_on(cache.cache_shard_for_reading(
+                shard_name,
+                tar_path,
+                token.clone(),
+            )) {
+                let loader = create_file_loader(
+                    &cached_path.to_string_lossy(),
+                    false,
+                    None,
+                    self.runtime.clone(),
+                );
+
+                return loader.load_file(file_info);
+            }
+        } else {
+            drop(dataset);
+        }
+
+        // Fallback to original behavior (no locking needed for non-cached files)
+        let loader = create_file_loader(tar_path, is_remote, token, self.runtime.clone());
+        loader.load_file(file_info)
+    }
+
+    fn load_json_sidecar_bytes(
+        &self,
+        tar_path: &str,
+        file_info: &FileInfo,
+        is_remote: bool,
+        token: Option<String>,
+    ) -> PyResult<Option<Vec<u8>>> {
+        if let (Some(offset), Some(length)) = (file_info.json_offset, file_info.json_length) {
+            if length > self.config.max_file_size {
+                return Ok(None);
+            }
+            let json_info = FileInfo {
+                path: file_info.json_path.clone(),
+                offset,
+                length,
+                sha256: None,
