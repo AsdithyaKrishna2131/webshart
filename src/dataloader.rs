@@ -1994,3 +1994,56 @@ impl PyTarDataLoader {
         if self.current_shard >= dataset.num_shards() {
             return Ok(());
         }
+
+        ensure_shard_metadata_with_retry(&mut dataset, self.current_shard)?;
+
+        let shard = dataset.shards.get(self.current_shard).ok_or_else(|| {
+            WebshartError::InvalidShardFormat(format!(
+                "Shard index {} out of range",
+                self.current_shard
+            ))
+        })?;
+
+        let metadata = shard
+            .metadata
+            .as_ref()
+            .ok_or_else(|| WebshartError::MetadataNotFound("Metadata not loaded".to_string()))?;
+
+        let tar_path = shard.tar_path.clone();
+        let is_remote = dataset.is_remote;
+        let token = if is_remote {
+            dataset.get_hf_token()
+        } else {
+            None
+        };
+
+        let total_files = metadata.num_files();
+
+        if self.next_file_to_load >= total_files {
+            return Ok(());
+        }
+
+        let start_idx = self.next_file_to_load;
+        let end_idx = std::cmp::min(start_idx + self.config.buffer_size, total_files);
+        let file_entries: Vec<IndexedFileEntry> = metadata
+            .file_range(start_idx, end_idx)
+            .into_iter()
+            .enumerate()
+            .filter_map(|(offset, (filename, file_info))| {
+                (file_info.length <= self.config.max_file_size).then_some((
+                    start_idx + offset,
+                    filename,
+                    file_info,
+                ))
+            })
+            .collect();
+
+        drop(dataset);
+
+        self.next_file_to_load = end_idx;
+
+        if file_entries.is_empty() {
+            return Ok(());
+        }
+
+        self.load_file_batch(tar_path, token, file_entries)?;
