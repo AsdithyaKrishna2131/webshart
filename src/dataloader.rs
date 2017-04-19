@@ -1942,3 +1942,55 @@ impl PyTarDataLoader {
         } else {
             Ok(None)
         }
+    }
+
+    fn take_buffered_entry(&mut self) -> Option<PyTarFileEntry> {
+        if self.buffer_position >= self.entry_buffer.len() {
+            return None;
+        }
+
+        let entry = &mut self.entry_buffer[self.buffer_position];
+        let result = PyTarFileEntry {
+            path: std::mem::take(&mut entry.path),
+            offset: entry.offset,
+            size: entry.size,
+            data: std::mem::take(&mut entry.data),
+            width: entry.width,
+            height: entry.height,
+            aspect: entry.aspect,
+            json_path: entry.json_path.clone(),
+            json_data: entry.json_data.clone(),
+            captions: entry.captions.clone(),
+            json_metadata: entry.json_metadata.clone(),
+            shard_idx: entry.shard_idx,
+            file_idx: entry.file_idx,
+        };
+        self.buffer_position += 1;
+        Some(result)
+    }
+
+    fn refill_buffer(&mut self) -> PyResult<()> {
+        self.entry_buffer.clear();
+        self.buffer_position = 0;
+
+        while self.entry_buffer.is_empty()
+            && self.current_shard < self.dataset.lock().unwrap().num_shards()
+        {
+            let previous_next_file = self.next_file_to_load;
+            self.load_entries_from_current_shard()?;
+
+            if self.entry_buffer.is_empty() && self.next_file_to_load == previous_next_file {
+                self.current_shard += 1;
+                self.next_file_to_load = 0;
+            }
+        }
+
+        Ok(())
+    }
+
+    fn load_entries_from_current_shard(&mut self) -> PyResult<()> {
+        let mut dataset = self.dataset.lock().unwrap();
+
+        if self.current_shard >= dataset.num_shards() {
+            return Ok(());
+        }
