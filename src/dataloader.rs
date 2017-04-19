@@ -2047,3 +2047,55 @@ impl PyTarDataLoader {
         }
 
         self.load_file_batch(tar_path, token, file_entries)?;
+
+        Ok(())
+    }
+
+    fn load_file_batch(
+        &mut self,
+        tar_path: String,
+        token: Option<String>,
+        file_entries: Vec<IndexedFileEntry>,
+    ) -> PyResult<()> {
+        let is_remote = tar_path.starts_with("http");
+
+        if !self.config.load_file_data {
+            self.push_entries_without_data(file_entries);
+            return Ok(());
+        }
+
+        if is_remote && file_entries.len() > 1 {
+            self.load_files_remote_streaming(tar_path, token, file_entries)
+        } else {
+            for (file_idx, filename, file_info) in file_entries {
+                let data = self
+                    .load_single_file_data(&tar_path, &file_info, is_remote, token.clone())
+                    .unwrap_or_else(|e| {
+                        eprintln!("Failed to load {}: {}", filename, e);
+                        Vec::new()
+                    });
+
+                self.entry_buffer.push(create_tar_entry(
+                    filename,
+                    &file_info,
+                    data,
+                    Some(self.current_shard),
+                    Some(file_idx),
+                ));
+            }
+            Ok(())
+        }
+    }
+
+    fn push_entries_without_data(&mut self, file_entries: Vec<IndexedFileEntry>) {
+        for (file_idx, filename, file_info) in file_entries {
+            self.entry_buffer.push(create_tar_entry(
+                filename,
+                &file_info,
+                Vec::new(),
+                Some(self.current_shard),
+                Some(file_idx),
+            ));
+        }
+    }
+
