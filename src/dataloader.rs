@@ -2255,3 +2255,56 @@ impl PyTarDataLoader {
 
     fn load_single_file_data_no_lock(
         &self,
+        tar_path: &str,
+        file_info: &FileInfo,
+        is_remote: bool,
+        token: Option<String>,
+    ) -> Result<Vec<u8>> {
+        let loader = create_file_loader(tar_path, is_remote, token, self.runtime.clone());
+        loader.load_file(file_info)
+    }
+}
+
+#[pyclass(name = "BucketDataLoader")]
+pub struct PyBucketDataLoader {
+    tar_loader: Py<PyTarDataLoader>,
+    buckets: BTreeMap<String, Vec<BucketEntry>>,
+    bucket_keys: Vec<String>,
+    processed_shards: Vec<bool>,
+    next_shard_to_process: usize,
+    current_bucket_idx: usize,
+    current_entry_idx: usize,
+    sampling_strategy: BucketSamplingStrategy,
+    randomized_entries: Option<Vec<(String, usize)>>,
+    random_position: usize,
+    key_type: String,
+    target_pixel_area: Option<u32>,
+    target_resolution_multiple: u32,
+    round_to: Option<usize>,
+    lazy_load: bool,
+    shard_batch_size: usize,
+    batch_size: Option<usize>,
+}
+
+impl BatchIterable<PyTarFileEntry> for PyBucketDataLoader {
+    fn next_item(&mut self) -> PyResult<Option<PyTarFileEntry>> {
+        Python::attach(|py| self.next_entry(py))
+    }
+
+    fn get_batch_size(&self) -> Option<usize> {
+        self.batch_size
+    }
+}
+
+#[pymethods]
+impl PyBucketDataLoader {
+    #[new]
+    #[pyo3(signature = (
+        dataset_or_path,
+        key="aspect",
+        target_pixel_area=None,
+        target_resolution_multiple=64,
+        round_to=Some(2),
+        sampling_strategy="sequential",
+        load_file_data=true,
+        max_file_size=50_000_000,
