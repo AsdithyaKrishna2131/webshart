@@ -2099,3 +2099,55 @@ impl PyTarDataLoader {
         }
     }
 
+    fn try_load_file_batch_from_cache(
+        &mut self,
+        tar_path: &str,
+        token: Option<String>,
+        file_entries: &[IndexedFileEntry],
+    ) -> PyResult<bool> {
+        let dataset = self.dataset.lock().unwrap();
+
+        if let Some(cache) = &dataset.shard_cache {
+            let shard_name = tar_path.rsplit('/').next().unwrap_or(tar_path);
+            let cache_clone = cache.clone();
+            drop(dataset);
+
+            // Cache and acquire the read lock without an eviction race between
+            // those operations.
+            if let Ok((cached_path, _lock)) = self
+                .runtime
+                .block_on(cache_clone.cache_shard_for_reading(shard_name, tar_path, token.clone()))
+            {
+                use std::io::{Read, Seek, SeekFrom};
+
+                let mut file = std::fs::File::open(&cached_path).map_err(WebshartError::Io)?;
+                for (file_idx, filename, file_info) in file_entries {
+                    let data = if self.config.load_file_data {
+                        let mut buffer = vec![0u8; file_info.length as usize];
+                        file.seek(SeekFrom::Start(file_info.offset))
+                            .and_then(|_| file.read_exact(&mut buffer))
+                            .map(|_| buffer)
+                            .unwrap_or_else(|e| {
+                                eprintln!("Failed to load {}: {}", filename, e);
+                                Vec::new()
+                            })
+                    } else {
+                        Vec::new()
+                    };
+
+                    self.entry_buffer.push(create_tar_entry(
+                        filename.clone(),
+                        file_info,
+                        data,
+                        Some(self.current_shard),
+                        Some(*file_idx),
+                    ));
+                }
+
+                return Ok(true);
+            }
+        } else {
+            drop(dataset);
+        }
+
+        Ok(false)
