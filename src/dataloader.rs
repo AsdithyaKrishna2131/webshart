@@ -2151,3 +2151,55 @@ impl PyTarDataLoader {
         }
 
         Ok(false)
+    }
+
+    fn load_files_remote_streaming(
+        &mut self,
+        url: String,
+        token: Option<String>,
+        file_entries: Vec<IndexedFileEntry>,
+    ) -> PyResult<()> {
+        if file_entries.is_empty() {
+            return Ok(());
+        }
+
+        if self.try_load_file_batch_from_cache(&url, token.clone(), &file_entries)? {
+            return Ok(());
+        }
+
+        let chunk_size_bytes = (self.config.chunk_size_mb * 1024 * 1024) as u64;
+        let ranges =
+            plan_remote_byte_ranges(&file_entries, self.config.max_file_size, chunk_size_bytes);
+        let fetch_result: Result<Vec<(RemoteByteRange, Vec<u8>)>> = self.runtime.block_on(async {
+            let client = file_http_client()?;
+            let mut fetched = Vec::with_capacity(ranges.len());
+
+            for range in ranges {
+                let mut request = client
+                    .get(&url)
+                    .header("Range", format!("bytes={}-{}", range.start, range.end - 1))
+                    .timeout(Duration::from_secs(60));
+
+                if let Some(ref token) = token {
+                    request = request.bearer_auth(token);
+                }
+
+                let response = request.send().await?;
+                let data = if response.status().is_success()
+                    || response.status() == reqwest::StatusCode::PARTIAL_CONTENT
+                {
+                    response.bytes().await?.to_vec()
+                } else if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                    return Err(WebshartError::RateLimited);
+                } else {
+                    return Err(WebshartError::Http(
+                        response.error_for_status().unwrap_err(),
+                    ));
+                };
+                fetched.push((range, data));
+            }
+
+            Ok(fetched)
+        });
+
+        match fetch_result {
