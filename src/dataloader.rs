@@ -2203,3 +2203,55 @@ impl PyTarDataLoader {
         });
 
         match fetch_result {
+            Ok(fetched_ranges) => {
+                for (file_idx, filename, file_info) in file_entries {
+                    let file_end = file_info.offset.saturating_add(file_info.length);
+                    let file_data = if file_info.length == 0 {
+                        Vec::new()
+                    } else {
+                        fetched_ranges
+                            .iter()
+                            .find(|(range, _)| {
+                                file_info.offset >= range.start && file_end <= range.end
+                            })
+                            .and_then(|(range, data)| {
+                                let start = (file_info.offset - range.start) as usize;
+                                let end = start.saturating_add(file_info.length as usize);
+                                data.get(start..end).map(<[u8]>::to_vec)
+                            })
+                            .unwrap_or_default()
+                    };
+
+                    self.entry_buffer.push(create_tar_entry(
+                        filename,
+                        &file_info,
+                        file_data,
+                        Some(self.current_shard),
+                        Some(file_idx),
+                    ));
+                }
+                Ok(())
+            }
+            Err(_) => {
+                for (file_idx, filename, file_info) in file_entries {
+                    let data = self
+                        .load_single_file_data(&url, &file_info, true, token.clone())
+                        .unwrap_or_else(|error| {
+                            eprintln!("Failed to load {}: {}", filename, error);
+                            Vec::new()
+                        });
+                    self.entry_buffer.push(create_tar_entry(
+                        filename,
+                        &file_info,
+                        data,
+                        Some(self.current_shard),
+                        Some(file_idx),
+                    ));
+                }
+                Ok(())
+            }
+        }
+    }
+
+    fn load_single_file_data_no_lock(
+        &self,
