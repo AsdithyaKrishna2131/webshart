@@ -2308,3 +2308,55 @@ impl PyBucketDataLoader {
         sampling_strategy="sequential",
         load_file_data=true,
         max_file_size=50_000_000,
+        hf_token=None,
+        chunk_size_mb=10,
+        lazy_load=true,
+        shard_batch_size=10,
+        batch_size=None
+    ))]
+    fn new(
+        py: Python,
+        dataset_or_path: &Bound<'_, PyAny>,
+        key: &str,
+        target_pixel_area: Option<u32>,
+        target_resolution_multiple: u32,
+        round_to: Option<usize>,
+        sampling_strategy: &str,
+        load_file_data: bool,
+        max_file_size: u64,
+        hf_token: Option<String>,
+        chunk_size_mb: usize,
+        lazy_load: bool,
+        shard_batch_size: usize,
+        batch_size: Option<usize>,
+    ) -> PyResult<Self> {
+        let sampling = BucketSamplingStrategy::parse(sampling_strategy)?;
+
+        let tar_loader = PyTarDataLoader::new(
+            dataset_or_path,
+            load_file_data,
+            max_file_size,
+            100, // Default buffer size
+            hf_token.clone(),
+            chunk_size_mb,
+            batch_size,
+        )?;
+
+        let num_shards = tar_loader.num_shards();
+        let tar_loader_py = Py::new(py, tar_loader)?;
+
+        let mut loader = Self {
+            tar_loader: tar_loader_py,
+            buckets: BTreeMap::new(),
+            bucket_keys: Vec::new(),
+            processed_shards: vec![false; num_shards],
+            next_shard_to_process: 0,
+            current_bucket_idx: 0,
+            current_entry_idx: 0,
+            sampling_strategy: sampling,
+            randomized_entries: None,
+            random_position: 0,
+            key_type: key.to_string(),
+            target_pixel_area,
+            target_resolution_multiple,
+            round_to,
