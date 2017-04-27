@@ -2360,3 +2360,55 @@ impl PyBucketDataLoader {
             target_pixel_area,
             target_resolution_multiple,
             round_to,
+            lazy_load,
+            shard_batch_size: shard_batch_size.max(1),
+            batch_size,
+        };
+
+        if !lazy_load || sampling == BucketSamplingStrategy::FullyRandom {
+            println!("[webshart] Building all buckets upfront");
+            loader.build_all_buckets(py)?;
+        } else {
+            println!("[webshart] Lazy mode enabled: buckets will be built on demand");
+            loader.ensure_buckets_available(py)?;
+        }
+
+        Ok(loader)
+    }
+
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<'_, Self>) -> PyResult<Option<PyTarFileEntry>> {
+        Python::attach(|py| slf.next_entry(py))
+    }
+
+    fn next_batch(&mut self) -> PyResult<Option<Vec<PyTarFileEntry>>> {
+        Python::attach(|_py| <Self as BatchIterable<PyTarFileEntry>>::next_batch(self))
+    }
+
+    fn iter_batches(slf: PyRef<'_, Self>) -> PyResult<PyBucketBatchIterator> {
+        if slf.batch_size.is_none() {
+            return Err(PyErr::new::<pyo3::exceptions::PyValueError, _>(
+                "batch_size must be set to use iter_batches()",
+            ));
+        }
+        Ok(PyBucketBatchIterator { loader: slf.into() })
+    }
+
+    fn reset(&mut self, py: Python) -> PyResult<()> {
+        self.current_bucket_idx = 0;
+        self.current_entry_idx = 0;
+        self.random_position = 0;
+        self.next_shard_to_process = 0;
+
+        self.processed_shards.fill(false);
+        self.buckets.clear();
+        self.bucket_keys.clear();
+        self.randomized_entries = None;
+
+        self.tar_loader.borrow_mut(py).reset()?;
+
+        if !self.lazy_load || self.sampling_strategy == BucketSamplingStrategy::FullyRandom {
+            self.build_all_buckets(py)?;
