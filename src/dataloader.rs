@@ -2412,3 +2412,55 @@ impl PyBucketDataLoader {
 
         if !self.lazy_load || self.sampling_strategy == BucketSamplingStrategy::FullyRandom {
             self.build_all_buckets(py)?;
+        } else {
+            self.ensure_buckets_available(py)?;
+        }
+
+        Ok(())
+    }
+
+    fn get_bucket_stats(&self, py: Python) -> PyResult<Py<PyAny>> {
+        let dict = PyDict::new(py);
+
+        dict.set_item("num_buckets", self.buckets.len())?;
+        dict.set_item("sampling_strategy", format!("{:?}", self.sampling_strategy))?;
+        dict.set_item("lazy_load", self.lazy_load)?;
+        dict.set_item(
+            "shards_processed",
+            self.processed_shards.iter().filter(|&&x| x).count(),
+        )?;
+        dict.set_item("total_shards", self.processed_shards.len())?;
+        dict.set_item("batch_size", self.batch_size)?;
+
+        let mut total_files = 0;
+        let mut min_files = usize::MAX;
+        let mut max_files = 0;
+
+        let bucket_details = PyDict::new(py);
+        for (key, entries) in &self.buckets {
+            let count = entries.len();
+            total_files += count;
+            min_files = min_files.min(count);
+            max_files = max_files.max(count);
+
+            bucket_details.set_item(key, count)?;
+        }
+
+        dict.set_item("total_files_loaded", total_files)?;
+        dict.set_item(
+            "min_files_per_bucket",
+            if min_files == usize::MAX {
+                0
+            } else {
+                min_files
+            },
+        )?;
+        dict.set_item("max_files_per_bucket", max_files)?;
+        dict.set_item(
+            "avg_files_per_bucket",
+            if self.buckets.is_empty() {
+                0.0
+            } else {
+                total_files as f64 / self.buckets.len() as f64
+            },
+        )?;
