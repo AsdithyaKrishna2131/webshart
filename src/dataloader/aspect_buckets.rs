@@ -16,3 +16,11 @@ pub struct AspectBucketEntry {
     pub filename: String,
     pub file_info: FileInfo,
     pub original_size: Option<(u32, u32)>,
+    pub sample_idx: Option<usize>,
+}
+
+#[pyclass]
+pub struct AspectBucketIterator {
+    pub loader: Py<PyTarDataLoader>,
+    pub key_type: String,
+    pub target_pixel_area: Option<u32>,
