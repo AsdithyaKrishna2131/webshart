@@ -24,3 +24,12 @@ pub struct AspectBucketIterator {
     pub loader: Py<PyTarDataLoader>,
     pub key_type: String,
     pub target_pixel_area: Option<u32>,
+    pub target_resolution_multiple: u32,
+    pub round_to: Option<usize>,
+    pub current_shard: usize,
+    pub num_shards: usize,
+}
+
+#[pymethods]
+impl AspectBucketIterator {
+    fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
