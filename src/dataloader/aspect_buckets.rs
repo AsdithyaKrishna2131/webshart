@@ -33,3 +33,12 @@ pub struct AspectBucketIterator {
 #[pymethods]
 impl AspectBucketIterator {
     fn __iter__(slf: PyRef<'_, Self>) -> PyRef<'_, Self> {
+        slf
+    }
+
+    fn __next__(mut slf: PyRefMut<'_, Self>) -> PyResult<Option<Py<PyAny>>> {
+        if slf.current_shard >= slf.num_shards {
+            return Ok(None);
+        }
+
+        Python::attach(|py| {
