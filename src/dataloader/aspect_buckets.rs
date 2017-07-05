@@ -42,3 +42,12 @@ impl AspectBucketIterator {
         }
 
         Python::attach(|py| {
+            let shard_idx = slf.current_shard;
+            slf.current_shard += 1;
+            let loader = slf.loader.borrow(py);
+            let result = loader.list_shard_aspect_buckets(
+                py,
+                vec![shard_idx],
+                &slf.key_type,
+                slf.target_pixel_area,
+                slf.target_resolution_multiple,
