@@ -59,3 +59,12 @@ impl AspectBucketIterator {
     }
 }
 
+pub fn scale_dimensions_with_multiple(
+    width: u32,
+    height: u32,
+    target_pixel_area: u32,
+    multiple: u32,
+) -> (u32, u32) {
+    // Target resolution is the desired total area (width * height)
+    // let aspect_ratio = width as f64 / height as f64;
+    let current_area = (width as f64) * (height as f64);
