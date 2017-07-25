@@ -51,3 +51,11 @@ impl AspectBucketIterator {
                 &slf.key_type,
                 slf.target_pixel_area,
                 slf.target_resolution_multiple,
+                slf.round_to,
+            )?;
+
+            Ok(result.into_iter().next())
+        })
+    }
+}
+
