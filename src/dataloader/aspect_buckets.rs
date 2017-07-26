@@ -85,3 +85,12 @@ pub fn scale_dimensions_with_multiple(
 /// Formats an aspect ratio with optional rounding
 pub fn format_aspect(aspect: f32, round_to: Option<usize>) -> String {
     match round_to {
+        Some(decimals) => format!("{:.prec$}", aspect, prec = decimals),
+        None => aspect.to_string(),
+    }
+}
+
+#[derive(Debug, Clone)]
+pub enum BucketKeyType {
+    Aspect,
+    GeometryTuple,
