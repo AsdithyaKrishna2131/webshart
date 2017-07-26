@@ -77,3 +77,11 @@ pub fn scale_dimensions_with_multiple(
     // Round to nearest multiple
     let rounded_width = ((new_width as f32 / multiple as f32).round() * multiple as f32) as u32;
     let rounded_height = ((new_height as f32 / multiple as f32).round() * multiple as f32) as u32;
+
+    // Ensure minimum size is at least the multiple
+    (rounded_width.max(multiple), rounded_height.max(multiple))
+}
+
+/// Formats an aspect ratio with optional rounding
+pub fn format_aspect(aspect: f32, round_to: Option<usize>) -> String {
+    match round_to {
