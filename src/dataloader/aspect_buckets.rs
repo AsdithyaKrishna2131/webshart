@@ -94,3 +94,12 @@ pub fn format_aspect(aspect: f32, round_to: Option<usize>) -> String {
 pub enum BucketKeyType {
     Aspect,
     GeometryTuple,
+    GeometryList,
+}
+
+impl BucketKeyType {
+    pub fn parse(key: &str) -> Result<Self> {
+        match key {
+            "aspect" => Ok(Self::Aspect),
+            "geometry-tuple" => Ok(Self::GeometryTuple),
+            "geometry-list" => Ok(Self::GeometryList),
