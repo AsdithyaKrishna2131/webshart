@@ -103,3 +103,12 @@ impl BucketKeyType {
             "aspect" => Ok(Self::Aspect),
             "geometry-tuple" => Ok(Self::GeometryTuple),
             "geometry-list" => Ok(Self::GeometryList),
+            _ => Err(WebshartError::InvalidShardFormat(
+                "key must be 'aspect', 'geometry-tuple', or 'geometry-list'".to_string(),
+            )),
+        }
+    }
+
+    pub fn format_dimensions(&self, width: u32, height: u32) -> String {
+        match self {
+            Self::Aspect => {
