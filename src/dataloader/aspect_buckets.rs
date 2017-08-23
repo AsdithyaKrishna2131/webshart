@@ -112,3 +112,11 @@ impl BucketKeyType {
     pub fn format_dimensions(&self, width: u32, height: u32) -> String {
         match self {
             Self::Aspect => {
+                let aspect = width as f32 / height as f32;
+                format_aspect(aspect, Some(2))
+            }
+            Self::GeometryTuple => format!("({}, {})", width, height),
+            Self::GeometryList => format!("[{}, {}]", width, height),
+        }
+    }
+}
