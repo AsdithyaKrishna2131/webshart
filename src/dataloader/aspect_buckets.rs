@@ -120,3 +120,12 @@ impl BucketKeyType {
         }
     }
 }
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum BucketSamplingStrategy {
+    Sequential,
+    RandomWithinBuckets,
+    FullyRandom,
+}
+
+impl BucketSamplingStrategy {
