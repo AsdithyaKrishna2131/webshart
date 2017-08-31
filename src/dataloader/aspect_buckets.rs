@@ -138,3 +138,12 @@ impl BucketSamplingStrategy {
                 "sampling_strategy must be 'sequential', 'random_within_buckets', or 'fully_random'".to_string()
             )),
         }
+    }
+}
+
+pub fn calculate_bucket_key(
+    key_type: &BucketKeyType,
+    width: u32,
+    height: u32,
+    aspect: Option<f32>,
+    target_pixel_area: Option<u32>,
