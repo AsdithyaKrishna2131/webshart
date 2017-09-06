@@ -36,3 +36,17 @@ impl BatchOperations {
             runtime: Arc::new(Runtime::new().expect("Failed to create Tokio runtime")),
         }
     }
+
+    pub fn with_runtime(runtime: Arc<Runtime>) -> Self {
+        Self { runtime }
+    }
+
+    /// Discover multiple datasets in parallel
+    pub fn discover_datasets_batch(
+        &self,
+        sources: Vec<String>,
+        hf_token: Option<String>,
+        subfolders: Option<Vec<Option<String>>>,
+    ) -> Vec<BatchResult<DiscoveredDataset>> {
+        let runtime = self.runtime.clone();
+
