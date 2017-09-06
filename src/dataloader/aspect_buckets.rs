@@ -147,3 +147,11 @@ pub fn calculate_bucket_key(
     height: u32,
     aspect: Option<f32>,
     target_pixel_area: Option<u32>,
+    target_resolution_multiple: u32,
+    round_to: Option<usize>,
+) -> (String, Option<(u32, u32)>) {
+    // Extract common scaling logic
+    let (final_width, final_height, original_size) = if let Some(target_res) = target_pixel_area {
+        let (scaled_w, scaled_h) =
+            scale_dimensions_with_multiple(width, height, target_res, target_resolution_multiple);
+        let orig = if scaled_w != width || scaled_h != height {
