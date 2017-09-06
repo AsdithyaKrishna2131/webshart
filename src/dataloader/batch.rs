@@ -78,3 +78,16 @@ impl BatchOperations {
                             Ok(dataset) => BatchResult::Ok(dataset),
                             Err(e) => BatchResult::Err(e.to_string()),
                         }
+                    }
+                }
+            });
+
+            join_all(futures).await
+        })
+    }
+
+    /// Load metadata for multiple shards in parallel
+    pub fn load_metadata_batch(
+        &self,
+        dataset: &mut DiscoveredDataset,
+        shard_indices: Vec<usize>,
