@@ -50,3 +50,17 @@ impl BatchOperations {
     ) -> Vec<BatchResult<DiscoveredDataset>> {
         let runtime = self.runtime.clone();
 
+        runtime.block_on(async {
+            let futures = sources.into_iter().enumerate().map(|(idx, source)| {
+                let token = hf_token.clone();
+                let subfolder = subfolders
+                    .as_ref()
+                    .and_then(|subs| subs.get(idx))
+                    .cloned()
+                    .flatten();
+                let runtime = runtime.clone();
+
+                async move {
+                    let discovery =
+                        DatasetDiscovery::with_runtime(runtime).with_optional_token(token);
+
