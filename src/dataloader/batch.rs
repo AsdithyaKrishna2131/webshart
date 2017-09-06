@@ -64,3 +64,17 @@ impl BatchOperations {
                     let discovery =
                         DatasetDiscovery::with_runtime(runtime).with_optional_token(token);
 
+                    // Check if local or remote
+                    if std::path::Path::new(&source).exists() {
+                        match discovery.discover_local(std::path::Path::new(&source)) {
+                            Ok(dataset) => BatchResult::Ok(dataset),
+                            Err(e) => BatchResult::Err(e.to_string()),
+                        }
+                    } else {
+                        match discovery
+                            .discover_huggingface(&source, subfolder.as_deref())
+                            .await
+                        {
+                            Ok(dataset) => BatchResult::Ok(dataset),
+                            Err(e) => BatchResult::Err(e.to_string()),
+                        }
