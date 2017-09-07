@@ -105,3 +105,17 @@ impl BatchOperations {
         results
     }
 
+    /// Read multiple files from potentially different shards in parallel
+    pub fn read_files_batch(
+        &self,
+        datasets: &mut [&mut DiscoveredDataset],
+        requests: Vec<FileReadRequest>,
+    ) -> Vec<BatchResult<Vec<u8>>> {
+        let runtime = self.runtime.clone();
+
+        // First ensure all required metadata is loaded
+        for req in &requests {
+            if let Some(dataset) = datasets.get_mut(req.dataset_idx) {
+                let _ = dataset.ensure_shard_metadata(req.shard_idx);
+            }
+        }
