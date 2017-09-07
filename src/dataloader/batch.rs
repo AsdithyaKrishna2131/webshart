@@ -91,3 +91,17 @@ impl BatchOperations {
         &self,
         dataset: &mut DiscoveredDataset,
         shard_indices: Vec<usize>,
+    ) -> Vec<BatchResult<()>> {
+        // Use the existing ensure_shard_metadata method which handles loading
+        let mut results = Vec::new();
+
+        for idx in shard_indices {
+            match dataset.ensure_shard_metadata(idx) {
+                Ok(()) => results.push(BatchResult::Ok(())),
+                Err(e) => results.push(BatchResult::Err(e.to_string())),
+            }
+        }
+
+        results
+    }
+
