@@ -133,3 +133,17 @@ impl BatchOperations {
                                 shard.tar_path.clone(),
                                 dataset.is_remote,
                                 dataset.get_hf_token(),
+                                filename,
+                                file_info.offset,
+                                file_info.length,
+                            ));
+                        } else {
+                            read_tasks.push((String::new(), false, None, String::new(), 0, 0));
+                        }
+                    } else {
+                        read_tasks.push((String::new(), false, None, String::new(), 0, 0));
+                    }
+                } else {
+                    read_tasks.push((String::new(), false, None, String::new(), 0, 0));
+                }
+            } else {
