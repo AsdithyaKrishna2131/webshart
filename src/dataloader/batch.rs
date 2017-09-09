@@ -147,3 +147,16 @@ impl BatchOperations {
                     read_tasks.push((String::new(), false, None, String::new(), 0, 0));
                 }
             } else {
+                read_tasks.push((String::new(), false, None, String::new(), 0, 0));
+            }
+        }
+
+        // Execute reads in parallel
+        runtime.block_on(async {
+            let futures = read_tasks.into_iter().map(
+                |(tar_path, is_remote, token, filename, offset, length)| async move {
+                    if tar_path.is_empty() {
+                        return BatchResult::Err("Invalid request".to_string());
+                    }
+
+                    let result = if is_remote {
