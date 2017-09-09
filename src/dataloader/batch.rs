@@ -119,3 +119,17 @@ impl BatchOperations {
                 let _ = dataset.ensure_shard_metadata(req.shard_idx);
             }
         }
+
+        // Prepare readers and file info
+        let mut read_tasks = Vec::new();
+        for req in requests {
+            if let Some(dataset) = datasets.get(req.dataset_idx) {
+                if let Some(shard) = dataset.shards.get(req.shard_idx) {
+                    if let Some(metadata) = &shard.metadata {
+                        if let Some((filename, file_info)) =
+                            metadata.get_file_by_index(req.file_idx)
+                        {
+                            read_tasks.push((
+                                shard.tar_path.clone(),
+                                dataset.is_remote,
+                                dataset.get_hf_token(),
