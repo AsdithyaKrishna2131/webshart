@@ -174,3 +174,17 @@ impl BatchOperations {
 
             join_all(futures).await
         })
+    }
+}
+
+// Helper functions for file reading
+async fn read_file_remote(
+    tar_url: &str,
+    hf_token: Option<&str>,
+    offset: u64,
+    length: u64,
+) -> Result<Vec<u8>> {
+    let client = file_http_client()?;
+
+    let mut request = client
+        .get(tar_url)
