@@ -160,3 +160,17 @@ impl BatchOperations {
                     }
 
                     let result = if is_remote {
+                        read_file_remote(&tar_path, token.as_deref(), offset, length).await
+                    } else {
+                        read_file_local(&tar_path, &filename, offset, length)
+                    };
+
+                    match result {
+                        Ok(data) => BatchResult::Ok(data),
+                        Err(e) => BatchResult::Err(e.to_string()),
+                    }
+                },
+            );
+
+            join_all(futures).await
+        })
