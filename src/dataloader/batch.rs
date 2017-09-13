@@ -188,3 +188,17 @@ async fn read_file_remote(
 
     let mut request = client
         .get(tar_url)
+        .header("Range", format!("bytes={}-{}", offset, offset + length - 1))
+        .timeout(std::time::Duration::from_secs(60));
+
+    if let Some(token) = hf_token {
+        request = request.bearer_auth(token);
+    }
+
+    let response = request.send().await?;
+    if !response.status().is_success() {
+        return Err(WebshartError::InvalidShardFormat(format!(
+            "Failed to read file content: {}",
+            response.status()
+        )));
+    }
