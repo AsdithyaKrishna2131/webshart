@@ -202,3 +202,17 @@ async fn read_file_remote(
             response.status()
         )));
     }
+
+    Ok(response.bytes().await?.to_vec())
+}
+
+fn read_file_local(tar_path: &str, _filename: &str, offset: u64, length: u64) -> Result<Vec<u8>> {
+    use std::io::{Read, Seek, SeekFrom};
+
+    let mut file = std::fs::File::open(tar_path)?;
+    file.seek(SeekFrom::Start(offset))?;
+    let mut buffer = vec![0u8; length as usize];
+    file.read_exact(&mut buffer)?;
+
+    Ok(buffer)
+}
