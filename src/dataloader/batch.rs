@@ -216,3 +216,16 @@ fn read_file_local(tar_path: &str, _filename: &str, offset: u64, length: u64) ->
 
     Ok(buffer)
 }
+
+/// Python wrapper for batch operations
+#[pyclass(name = "BatchOperations")]
+pub struct PyBatchOperations {
+    inner: BatchOperations,
+}
+
+#[pymethods]
+impl PyBatchOperations {
+    #[new]
+    fn new() -> Self {
+        Self {
+            inner: BatchOperations::new(),
