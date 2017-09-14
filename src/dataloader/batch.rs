@@ -229,3 +229,17 @@ impl PyBatchOperations {
     fn new() -> Self {
         Self {
             inner: BatchOperations::new(),
+        }
+    }
+
+    #[pyo3(signature = (sources, hf_token=None, subfolders=None))]
+    fn discover_datasets_batch(
+        &self,
+        sources: Vec<String>,
+        hf_token: Option<String>,
+        subfolders: Option<Vec<Option<String>>>,
+    ) -> PyResult<Py<PyList>> {
+        let results = self
+            .inner
+            .discover_datasets_batch(sources, hf_token, subfolders);
+
