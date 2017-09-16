@@ -243,3 +243,17 @@ impl PyBatchOperations {
             .inner
             .discover_datasets_batch(sources, hf_token, subfolders);
 
+        Python::attach(|py| {
+            let list = PyList::empty(py);
+            for result in results {
+                match result {
+                    BatchResult::Ok(dataset) => {
+                        let py_dataset = PyDiscoveredDataset { inner: dataset };
+                        list.append(Py::new(py, py_dataset)?)?;
+                    }
+                    BatchResult::Err(_e) => {
+                        list.append(py.None())?;
+                    }
+                }
+            }
+            Ok(list.into())
