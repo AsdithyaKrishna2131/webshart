@@ -257,3 +257,17 @@ impl PyBatchOperations {
                 }
             }
             Ok(list.into())
+        })
+    }
+
+    fn load_metadata_batch(
+        &self,
+        dataset: &mut PyDiscoveredDataset,
+        shard_indices: Vec<usize>,
+    ) -> PyResult<Py<PyList>> {
+        let results = self
+            .inner
+            .load_metadata_batch(&mut dataset.inner, shard_indices);
+
+        Python::attach(|py| {
+            let list = PyList::empty(py);
