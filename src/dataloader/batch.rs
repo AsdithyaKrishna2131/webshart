@@ -271,3 +271,17 @@ impl PyBatchOperations {
 
         Python::attach(|py| {
             let list = PyList::empty(py);
+            for result in results {
+                match result {
+                    BatchResult::Ok(()) => list.append(true)?,
+                    BatchResult::Err(e) => {
+                        let dict = PyDict::new(py);
+                        dict.set_item("error", e)?;
+                        list.append(dict)?;
+                    }
+                }
+            }
+            Ok(list.into())
+        })
+    }
+
