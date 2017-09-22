@@ -298,3 +298,17 @@ impl PyBatchOperations {
         for i in 0..datasets.len() {
             let item = datasets.get_item(i)?;
             if let Ok(dataset) = item.extract::<PyRefMut<PyDiscoveredDataset>>() {
+                py_datasets.push(dataset);
+            } else {
+                return Err(pyo3::exceptions::PyTypeError::new_err(
+                    "Expected list of DiscoveredDataset objects",
+                ));
+            }
+        }
+
+        for dataset in &mut py_datasets {
+            dataset_refs.push(&mut dataset.inner);
+        }
+
+        let requests: Vec<FileReadRequest> = requests
+            .into_iter()
