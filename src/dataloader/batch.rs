@@ -285,3 +285,16 @@ impl PyBatchOperations {
         })
     }
 
+    fn read_files_batch(
+        &self,
+        py: Python,
+        datasets: &Bound<'_, PyList>,
+        requests: Vec<(usize, usize, usize)>, // (dataset_idx, shard_idx, file_idx)
+    ) -> PyResult<Py<PyList>> {
+        // Extract mutable references to datasets
+        let mut dataset_refs: Vec<&mut DiscoveredDataset> = Vec::new();
+        let mut py_datasets: Vec<PyRefMut<PyDiscoveredDataset>> = Vec::new();
+
+        for i in 0..datasets.len() {
+            let item = datasets.get_item(i)?;
+            if let Ok(dataset) = item.extract::<PyRefMut<PyDiscoveredDataset>>() {
