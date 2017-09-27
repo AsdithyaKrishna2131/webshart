@@ -312,3 +312,17 @@ impl PyBatchOperations {
 
         let requests: Vec<FileReadRequest> = requests
             .into_iter()
+            .map(|(dataset_idx, shard_idx, file_idx)| FileReadRequest {
+                dataset_idx,
+                shard_idx,
+                file_idx,
+            })
+            .collect();
+
+        let results = self.inner.read_files_batch(&mut dataset_refs, requests);
+
+        let list = PyList::empty(py);
+        for result in results {
+            match result {
+                BatchResult::Ok(data) => {
+                    list.append(PyBytes::new(py, &data))?;
