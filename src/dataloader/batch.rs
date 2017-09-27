@@ -326,3 +326,17 @@ impl PyBatchOperations {
             match result {
                 BatchResult::Ok(data) => {
                     list.append(PyBytes::new(py, &data))?;
+                }
+                BatchResult::Err(_e) => {
+                    list.append(py.None())?;
+                }
+            }
+        }
+        Ok(list.into())
+    }
+}
+
+pub trait BatchIterable<T> {
+    fn next_item(&mut self) -> PyResult<Option<T>>;
+
+    fn next_batch(&mut self) -> PyResult<Option<Vec<T>>> {
