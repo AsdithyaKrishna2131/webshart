@@ -11,3 +11,7 @@ pub struct DataLoaderConfig {
     pub batch_size: Option<usize>,
 }
 
+impl DataLoaderConfig {
+    pub fn from_state_dict(state_dict: &Bound<'_, PyDict>) -> Self {
+        Self {
+            load_file_data: state_dict
