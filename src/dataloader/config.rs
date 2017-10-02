@@ -7,3 +7,7 @@ pub struct DataLoaderConfig {
     pub max_file_size: u64,
     pub buffer_size: usize,
     pub chunk_size_mb: usize,
+    pub hf_token: Option<String>,
+    pub batch_size: Option<usize>,
+}
+
