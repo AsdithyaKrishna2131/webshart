@@ -22,3 +22,7 @@ impl DataLoaderConfig {
                 .unwrap_or(true),
             max_file_size: state_dict
                 .get_item("max_file_size")
+                .ok()
+                .flatten()
+                .and_then(|v| v.extract().ok())
+                .unwrap_or(50_000_000),
