@@ -26,3 +26,7 @@ impl DataLoaderConfig {
                 .flatten()
                 .and_then(|v| v.extract().ok())
                 .unwrap_or(50_000_000),
+            buffer_size: state_dict
+                .get_item("buffer_size")
+                .ok()
+                .flatten()
