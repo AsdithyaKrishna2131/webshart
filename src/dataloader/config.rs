@@ -30,3 +30,6 @@ impl DataLoaderConfig {
                 .get_item("buffer_size")
                 .ok()
                 .flatten()
+                .and_then(|v| v.extract().ok())
+                .unwrap_or(100),
+            chunk_size_mb: state_dict
