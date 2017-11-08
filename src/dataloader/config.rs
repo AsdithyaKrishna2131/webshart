@@ -37,3 +37,7 @@ impl DataLoaderConfig {
                 .ok()
                 .flatten()
                 .and_then(|v| v.extract().ok())
+                .unwrap_or(10),
+            hf_token: state_dict
+                .get_item("hf_token")
+                .ok()
