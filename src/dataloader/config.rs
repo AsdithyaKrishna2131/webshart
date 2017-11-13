@@ -44,3 +44,7 @@ impl DataLoaderConfig {
                 .flatten()
                 .and_then(|v| v.extract().ok()),
             batch_size: state_dict
+                .get_item("batch_size")
+                .ok()
+                .flatten()
+                .and_then(|v| v.extract().ok()),
