@@ -41,3 +41,6 @@ impl DataLoaderConfig {
             hf_token: state_dict
                 .get_item("hf_token")
                 .ok()
+                .flatten()
+                .and_then(|v| v.extract().ok()),
+            batch_size: state_dict
