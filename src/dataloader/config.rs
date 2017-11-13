@@ -48,3 +48,7 @@ impl DataLoaderConfig {
                 .ok()
                 .flatten()
                 .and_then(|v| v.extract().ok()),
+        }
+    }
+
+    pub fn to_state_dict(&self, dict: &Bound<'_, PyDict>) -> PyResult<()> {
