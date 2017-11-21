@@ -17,3 +17,13 @@ pub struct PyTarFileEntry {
     pub captions: Option<CaptionValue>,
     pub json_metadata: Option<serde_json::Value>,
     pub shard_idx: Option<usize>,
+    pub file_idx: Option<usize>,
+}
+
+#[pymethods]
+impl PyTarFileEntry {
+    #[getter]
+    fn path(&self) -> &str {
+        &self.path
+    }
+
