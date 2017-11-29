@@ -27,3 +27,12 @@ impl PyTarFileEntry {
         &self.path
     }
 
+    #[getter]
+    fn offset(&self) -> u64 {
+        self.offset
+    }
+
+    #[getter]
+    fn size(&self) -> u64 {
+        self.size
+    }
