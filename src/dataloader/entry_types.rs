@@ -46,3 +46,12 @@ impl PyTarFileEntry {
     fn width(&self) -> Option<u32> {
         self.width
     }
+
+    #[getter]
+    fn height(&self) -> Option<u32> {
+        self.height
+    }
+
+    #[getter]
+    fn aspect(&self) -> Option<f32> {
+        self.aspect
