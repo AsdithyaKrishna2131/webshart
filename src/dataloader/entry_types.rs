@@ -55,3 +55,13 @@ impl PyTarFileEntry {
     #[getter]
     fn aspect(&self) -> Option<f32> {
         self.aspect
+    }
+
+    #[getter]
+    fn json_path(&self) -> Option<&str> {
+        self.json_path.as_deref()
+    }
+
+    #[getter]
+    fn json_data(&self) -> Option<Py<PyBytes>> {
+        Python::attach(|py| {
