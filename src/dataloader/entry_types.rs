@@ -65,3 +65,12 @@ impl PyTarFileEntry {
     #[getter]
     fn json_data(&self) -> Option<Py<PyBytes>> {
         Python::attach(|py| {
+            self.json_data
+                .as_ref()
+                .map(|data| PyBytes::new(py, data).unbind())
+        })
+    }
+
+    #[getter]
+    fn caption(&self) -> Option<&str> {
+        self.captions.as_ref().and_then(CaptionValue::first)
