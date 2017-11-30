@@ -36,3 +36,13 @@ impl PyTarFileEntry {
     fn size(&self) -> u64 {
         self.size
     }
+
+    #[getter]
+    fn data(&self) -> PyResult<Py<PyBytes>> {
+        Python::attach(|py| Ok(PyBytes::new(py, &self.data).unbind()))
+    }
+
+    #[getter]
+    fn width(&self) -> Option<u32> {
+        self.width
+    }
