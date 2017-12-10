@@ -84,3 +84,12 @@ impl PyTarFileEntry {
         }
     }
 
+    #[getter]
+    fn json_metadata(&self, py: Python) -> PyResult<Option<Py<PyAny>>> {
+        match &self.json_metadata {
+            Some(value) => Ok(Some(pythonize::pythonize(py, value)?.unbind())),
+            None => Ok(None),
+        }
+    }
+
+    /// Get all metadata as a dictionary
