@@ -112,3 +112,13 @@ impl PyTarFileEntry {
         if let Some(json_path) = &self.json_path {
             dict.set_item("json_path", json_path)?;
         }
+        if let Some(captions) = &self.captions {
+            dict.set_item("captions", pythonize::pythonize(py, captions)?)?;
+        }
+        if let Some(value) = &self.json_metadata {
+            dict.set_item("json_metadata", pythonize::pythonize(py, value)?)?;
+        }
+
+        Ok(dict.into_any().unbind())
+    }
+
