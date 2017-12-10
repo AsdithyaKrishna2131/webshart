@@ -74,3 +74,13 @@ impl PyTarFileEntry {
     #[getter]
     fn caption(&self) -> Option<&str> {
         self.captions.as_ref().and_then(CaptionValue::first)
+    }
+
+    #[getter]
+    fn captions(&self, py: Python) -> PyResult<Option<Py<PyAny>>> {
+        match &self.captions {
+            Some(captions) => Ok(Some(pythonize::pythonize(py, captions)?.unbind())),
+            None => Ok(None),
+        }
+    }
+
