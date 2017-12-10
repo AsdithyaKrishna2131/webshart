@@ -103,3 +103,12 @@ impl PyTarFileEntry {
         if let Some(w) = self.width {
             dict.set_item("width", w)?;
         }
+        if let Some(h) = self.height {
+            dict.set_item("height", h)?;
+        }
+        if let Some(a) = self.aspect {
+            dict.set_item("aspect", a)?;
+        }
+        if let Some(json_path) = &self.json_path {
+            dict.set_item("json_path", json_path)?;
+        }
