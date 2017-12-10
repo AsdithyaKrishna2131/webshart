@@ -93,3 +93,13 @@ impl PyTarFileEntry {
     }
 
     /// Get all metadata as a dictionary
+    #[getter]
+    fn metadata(&self, py: Python) -> PyResult<Py<PyAny>> {
+        let dict = PyDict::new(py);
+        dict.set_item("path", &self.path)?;
+        dict.set_item("offset", self.offset)?;
+        dict.set_item("size", self.size)?;
+
+        if let Some(w) = self.width {
+            dict.set_item("width", w)?;
+        }
