@@ -122,3 +122,12 @@ impl PyTarFileEntry {
         Ok(dict.into_any().unbind())
     }
 
+    /// Get formatted job ID for tracking
+    #[getter]
+    fn job_id(&self) -> String {
+        if let (Some(shard), Some(file)) = (self.shard_idx, self.file_idx) {
+            format!("shard{:04}_file{:06}", shard, file)
+        } else {
+            // Fallback to path-based ID
+            let path_hash = self
+                .path
