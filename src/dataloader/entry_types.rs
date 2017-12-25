@@ -131,3 +131,13 @@ impl PyTarFileEntry {
             // Fallback to path-based ID
             let path_hash = self
                 .path
+                .chars()
+                .fold(0u32, |acc, c| acc.wrapping_mul(31).wrapping_add(c as u32));
+            format!("file_{:08x}", path_hash)
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        let mut parts = vec![
+            format!("path='{}'", self.path),
+            format!("offset={}", self.offset),
