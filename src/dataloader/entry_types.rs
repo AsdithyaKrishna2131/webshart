@@ -141,3 +141,12 @@ impl PyTarFileEntry {
         let mut parts = vec![
             format!("path='{}'", self.path),
             format!("offset={}", self.offset),
+            format!("size={}", self.size),
+        ];
+
+        if let Some(w) = self.width {
+            parts.push(format!("width={}", w));
+        }
+        if let Some(h) = self.height {
+            parts.push(format!("height={}", h));
+        }
