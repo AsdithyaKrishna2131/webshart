@@ -150,3 +150,13 @@ impl PyTarFileEntry {
         if let Some(h) = self.height {
             parts.push(format!("height={}", h));
         }
+        if let Some(a) = self.aspect {
+            parts.push(format!("aspect={:.2}", a));
+        }
+        if let Some(s) = self.shard_idx {
+            parts.push(format!("shard_idx={}", s));
+        }
+        if let Some(f) = self.file_idx {
+            parts.push(format!("file_idx={}", f));
+        }
+
