@@ -160,3 +160,12 @@ impl PyTarFileEntry {
             parts.push(format!("file_idx={}", f));
         }
 
+        format!("TarFileEntry({})", parts.join(", "))
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct BucketEntry {
+    pub shard_idx: usize,
+    pub filename: String,
+    pub file_info: crate::metadata::FileInfo,
