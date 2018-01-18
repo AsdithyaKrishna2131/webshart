@@ -23,3 +23,9 @@ pub(crate) fn file_http_client() -> Result<reqwest::Client> {
         .pool_max_idle_per_host(8)
         .build()
         .map_err(WebshartError::from)?;
+
+    let _ = CLIENT.set(client);
+    Ok(CLIENT.get().expect("HTTP client initialized").clone())
+}
+
+pub struct LocalFileLoader {
