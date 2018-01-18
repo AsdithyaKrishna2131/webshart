@@ -29,3 +29,10 @@ pub(crate) fn file_http_client() -> Result<reqwest::Client> {
 }
 
 pub struct LocalFileLoader {
+    tar_path: String,
+}
+
+impl LocalFileLoader {
+    pub fn new(tar_path: String) -> Self {
+        Self { tar_path }
+    }
