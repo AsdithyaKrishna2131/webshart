@@ -16,3 +16,10 @@ pub(crate) fn file_http_client() -> Result<reqwest::Client> {
 
     if let Some(client) = CLIENT.get() {
         return Ok(client.clone());
+    }
+
+    let client = reqwest::Client::builder()
+        .pool_idle_timeout(Duration::from_secs(30))
+        .pool_max_idle_per_host(8)
+        .build()
+        .map_err(WebshartError::from)?;
