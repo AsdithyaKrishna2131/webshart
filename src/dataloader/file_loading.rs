@@ -36,3 +36,9 @@ impl LocalFileLoader {
     pub fn new(tar_path: String) -> Self {
         Self { tar_path }
     }
+}
+
+impl FileLoader for LocalFileLoader {
+    fn load_file(&self, file_info: &FileInfo) -> Result<Vec<u8>> {
+        use std::io::{Read, Seek, SeekFrom};
+
