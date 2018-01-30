@@ -42,3 +42,10 @@ impl FileLoader for LocalFileLoader {
     fn load_file(&self, file_info: &FileInfo) -> Result<Vec<u8>> {
         use std::io::{Read, Seek, SeekFrom};
 
+        let mut file = std::fs::File::open(&self.tar_path)?;
+        file.seek(SeekFrom::Start(file_info.offset))?;
+
+        let mut buffer = vec![0u8; file_info.length as usize];
+        file.read_exact(&mut buffer)?;
+
+        Ok(buffer)
