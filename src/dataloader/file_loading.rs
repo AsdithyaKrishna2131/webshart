@@ -62,3 +62,10 @@ impl RemoteFileLoader {
     pub fn new(url: String, token: Option<String>, runtime: Arc<Runtime>) -> Self {
         Self {
             url,
+            token,
+            runtime,
+        }
+    }
+}
+
+impl FileLoader for RemoteFileLoader {
