@@ -55,3 +55,10 @@ impl FileLoader for LocalFileLoader {
 pub struct RemoteFileLoader {
     url: String,
     token: Option<String>,
+    runtime: Arc<Runtime>,
+}
+
+impl RemoteFileLoader {
+    pub fn new(url: String, token: Option<String>, runtime: Arc<Runtime>) -> Self {
+        Self {
+            url,
