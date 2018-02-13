@@ -69,3 +69,9 @@ impl RemoteFileLoader {
 }
 
 impl FileLoader for RemoteFileLoader {
+    fn load_file(&self, file_info: &FileInfo) -> Result<Vec<u8>> {
+        self.runtime.block_on(async {
+            let client = file_http_client()?;
+
+            let mut request = client
+                .get(&self.url)
