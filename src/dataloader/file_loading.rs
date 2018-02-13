@@ -49,3 +49,9 @@ impl FileLoader for LocalFileLoader {
         file.read_exact(&mut buffer)?;
 
         Ok(buffer)
+    }
+}
+
+pub struct RemoteFileLoader {
+    url: String,
+    token: Option<String>,
