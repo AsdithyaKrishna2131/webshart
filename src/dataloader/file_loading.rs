@@ -75,3 +75,10 @@ impl FileLoader for RemoteFileLoader {
 
             let mut request = client
                 .get(&self.url)
+                .header(
+                    "Range",
+                    format!(
+                        "bytes={}-{}",
+                        file_info.offset,
+                        file_info.offset + file_info.length - 1
+                    ),
