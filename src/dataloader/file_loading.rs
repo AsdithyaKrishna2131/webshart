@@ -82,3 +82,9 @@ impl FileLoader for RemoteFileLoader {
                         file_info.offset,
                         file_info.offset + file_info.length - 1
                     ),
+                )
+                .timeout(Duration::from_secs(60));
+
+            if let Some(token) = &self.token {
+                request = request.bearer_auth(token);
+            }
