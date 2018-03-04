@@ -88,3 +88,10 @@ impl FileLoader for RemoteFileLoader {
             if let Some(token) = &self.token {
                 request = request.bearer_auth(token);
             }
+
+            let response = request.send().await?;
+
+            if response.status().is_success()
+                || response.status() == reqwest::StatusCode::PARTIAL_CONTENT
+            {
+                Ok(response.bytes().await?.to_vec())
