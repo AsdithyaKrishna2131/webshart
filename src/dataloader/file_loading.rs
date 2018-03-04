@@ -95,3 +95,9 @@ impl FileLoader for RemoteFileLoader {
                 || response.status() == reqwest::StatusCode::PARTIAL_CONTENT
             {
                 Ok(response.bytes().await?.to_vec())
+            } else if response.status() == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                Err(WebshartError::RateLimited)
+            } else {
+                Err(WebshartError::Http(reqwest::Error::from(
+                    response.error_for_status().unwrap_err(),
+                )))
