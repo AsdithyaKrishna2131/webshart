@@ -75,3 +75,21 @@ impl ShardCache {
             .map_err(WebshartError::Io)?;
         fs::create_dir_all(self.download_dir())
             .await
+            .map_err(WebshartError::Io)?;
+        fs::create_dir_all(self.access_dir())
+            .await
+            .map_err(WebshartError::Io)
+    }
+
+    pub fn get_cached_shard_path(&self, shard_name: &str) -> PathBuf {
+        self.cache_dir.join(shard_name)
+    }
+
+    pub async fn is_cached(&self, shard_name: &str) -> bool {
+        self.get_cached_shard_path(shard_name).is_file()
+    }
+
+    pub async fn lock_shard_for_reading(&self, shard_name: &str) -> Result<ShardLockGuard> {
+        let lock_path = self.shard_lock_path(shard_name);
+        let cached_path = self.get_cached_shard_path(shard_name);
+        let file = tokio::task::spawn_blocking(move || -> std::io::Result<std::fs::File> {
