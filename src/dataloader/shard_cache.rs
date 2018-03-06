@@ -93,3 +93,21 @@ impl ShardCache {
         let lock_path = self.shard_lock_path(shard_name);
         let cached_path = self.get_cached_shard_path(shard_name);
         let file = tokio::task::spawn_blocking(move || -> std::io::Result<std::fs::File> {
+            let file = Self::open_lock_file(&lock_path)?;
+            file.lock_shared()?;
+            Ok(file)
+        })
+        .await
+        .map_err(Self::join_error)??;
+
+        // Check after taking the lock. An evictor cannot remove the shard between
+        // this check and the caller finishing its read.
+        if !cached_path.is_file() {
+            return Err(WebshartError::CacheMiss(shard_name.to_string()));
+        }
+
+        Ok(ShardLockGuard { file })
+    }
+
+    pub fn is_shard_locked(&self, shard_name: &str) -> bool {
+        let Ok(file) = Self::open_lock_file(&self.shard_lock_path(shard_name)) else {
