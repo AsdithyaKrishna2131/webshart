@@ -111,3 +111,21 @@ impl ShardCache {
 
     pub fn is_shard_locked(&self, shard_name: &str) -> bool {
         let Ok(file) = Self::open_lock_file(&self.shard_lock_path(shard_name)) else {
+            return false;
+        };
+        file.try_lock_exclusive().is_err()
+    }
+
+    pub async fn cache_shard(
+        &self,
+        shard_name: &str,
+        remote_url: &str,
+        token: Option<String>,
+    ) -> Result<PathBuf> {
+        let (path, _) = self
+            .ensure_cached(shard_name, remote_url, token, false)
+            .await?;
+        Ok(path)
+    }
+
+    pub async fn cache_shard_for_reading(
