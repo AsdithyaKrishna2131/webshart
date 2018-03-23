@@ -129,3 +129,20 @@ impl ShardCache {
     }
 
     pub async fn cache_shard_for_reading(
+        &self,
+        shard_name: &str,
+        remote_url: &str,
+        token: Option<String>,
+    ) -> Result<(PathBuf, ShardLockGuard)> {
+        let (path, read_lock) = self
+            .ensure_cached(shard_name, remote_url, token, true)
+            .await?;
+        Ok((path, read_lock.expect("read lock requested")))
+    }
+
+    async fn ensure_cached(
+        &self,
+        shard_name: &str,
+        remote_url: &str,
+        token: Option<String>,
+        lock_for_reading: bool,
