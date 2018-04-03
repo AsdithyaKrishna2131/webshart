@@ -164,3 +164,21 @@ impl ShardCache {
         // Recheck after taking the cross-process download lock.
         if let Ok(read_lock) = self.lock_shard_for_reading(shard_name).await {
             self.touch_shard(shard_name).await;
+            return Ok((
+                cached_path,
+                if lock_for_reading {
+                    Some(read_lock)
+                } else {
+                    None
+                },
+            ));
+        }
+
+        let temp_path = self.temp_download_path(shard_name);
+        self.active_downloads
+            .lock()
+            .unwrap()
+            .insert(shard_name.to_string(), temp_path.clone());
+
+        let result = self
+            .download_shard_to_disk(remote_url, token, shard_name, &temp_path)
