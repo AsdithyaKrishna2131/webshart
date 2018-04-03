@@ -146,3 +146,21 @@ impl ShardCache {
         remote_url: &str,
         token: Option<String>,
         lock_for_reading: bool,
+    ) -> Result<(PathBuf, Option<ShardLockGuard>)> {
+        let cached_path = self.get_cached_shard_path(shard_name);
+
+        // The semaphore limits this process. The file lock prevents a second
+        // process using the same cache directory from downloading the same shard.
+        let _permit = self.download_semaphore.acquire().await.map_err(|e| {
+            WebshartError::Io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to acquire download permit: {}", e),
+            ))
+        })?;
+        let _download_lock = self
+            .lock_exclusive(self.download_lock_path(shard_name))
+            .await?;
+
+        // Recheck after taking the cross-process download lock.
+        if let Ok(read_lock) = self.lock_shard_for_reading(shard_name).await {
+            self.touch_shard(shard_name).await;
