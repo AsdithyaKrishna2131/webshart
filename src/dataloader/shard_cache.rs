@@ -182,3 +182,21 @@ impl ShardCache {
 
         let result = self
             .download_shard_to_disk(remote_url, token, shard_name, &temp_path)
+            .await;
+
+        self.active_downloads.lock().unwrap().remove(shard_name);
+
+        match result {
+            Ok(shard_size) => {
+                self.record_cached_shard(shard_name, shard_size);
+                // The download lock is still held, and evictors take that lock
+                // before the shard lock. This closes the commit-to-read gap.
+                let read_lock = if lock_for_reading {
+                    Some(self.lock_shard_for_reading(shard_name).await?)
+                } else {
+                    None
+                };
+                Ok((cached_path, read_lock))
+            }
+            Err(error) => {
+                let _ = fs::remove_file(&temp_path).await;
