@@ -200,3 +200,20 @@ impl ShardCache {
             }
             Err(error) => {
                 let _ = fs::remove_file(&temp_path).await;
+                Err(error)
+            }
+        }
+    }
+
+    async fn download_shard_to_disk(
+        &self,
+        url: &str,
+        token: Option<String>,
+        shard_name: &str,
+        temp_path: &Path,
+    ) -> Result<u64> {
+        use futures::StreamExt;
+
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(300))
+            .build()
