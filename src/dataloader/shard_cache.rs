@@ -217,3 +217,21 @@ impl ShardCache {
         let client = reqwest::Client::builder()
             .timeout(std::time::Duration::from_secs(300))
             .build()
+            .map_err(WebshartError::from)?;
+
+        let mut request = client.get(url);
+        if let Some(token) = token {
+            request = request.bearer_auth(token);
+        }
+
+        let response = request
+            .send()
+            .await
+            .map_err(WebshartError::from)?
+            .error_for_status()
+            .map_err(WebshartError::from)?;
+
+        let mut file = File::create(temp_path).await.map_err(WebshartError::Io)?;
+        let mut stream = response.bytes_stream();
+        let mut bytes_written = 0u64;
+
