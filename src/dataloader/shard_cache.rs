@@ -235,3 +235,21 @@ impl ShardCache {
         let mut stream = response.bytes_stream();
         let mut bytes_written = 0u64;
 
+        while let Some(chunk) = stream.next().await {
+            let chunk = chunk.map_err(WebshartError::from)?;
+            bytes_written += chunk.len() as u64;
+            file.write_all(&chunk).await.map_err(WebshartError::Io)?;
+
+            if bytes_written % (1024 * 1024) == 0 {
+                file.sync_data().await.map_err(WebshartError::Io)?;
+            }
+        }
+
+        file.flush().await.map_err(WebshartError::Io)?;
+        file.sync_all().await.map_err(WebshartError::Io)?;
+        drop(file);
+
+        self.commit_download(temp_path, shard_name, bytes_written)
+            .await?;
+
+        Ok(bytes_written)
