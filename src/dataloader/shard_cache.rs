@@ -253,3 +253,21 @@ impl ShardCache {
             .await?;
 
         Ok(bytes_written)
+    }
+
+    /// Serializes the disk-space decision and final rename across processes.
+    async fn commit_download(
+        &self,
+        temp_path: &Path,
+        shard_name: &str,
+        shard_size: u64,
+    ) -> Result<()> {
+        let _cache_lock = self.lock_exclusive(self.cache_lock_path()).await?;
+        let _shard_lock = self
+            .lock_exclusive(self.shard_lock_path(shard_name))
+            .await?;
+
+        self.evict_if_needed_locked(shard_size, Some(shard_name))
+            .await?;
+
+        fs::rename(temp_path, self.get_cached_shard_path(shard_name))
