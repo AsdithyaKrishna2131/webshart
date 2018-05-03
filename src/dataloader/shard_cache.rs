@@ -271,3 +271,20 @@ impl ShardCache {
             .await?;
 
         fs::rename(temp_path, self.get_cached_shard_path(shard_name))
+            .await
+            .map_err(WebshartError::Io)?;
+        self.touch_shard(shard_name).await;
+        Ok(())
+    }
+
+    /// The caller must hold the cache-wide exclusive lock.
+    async fn evict_if_needed_locked(
+        &self,
+        needed_bytes: u64,
+        shard_to_keep: Option<&str>,
+    ) -> Result<()> {
+        let mut cached_shards = self.scan_cached_shards().await?;
+        let mut current_size = cached_shards.iter().map(|shard| shard.size).sum::<u64>();
+        cached_shards.sort_by_key(|shard| shard.last_used);
+
+        for shard in &cached_shards {
