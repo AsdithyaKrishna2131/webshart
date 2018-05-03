@@ -288,3 +288,21 @@ impl ShardCache {
         cached_shards.sort_by_key(|shard| shard.last_used);
 
         for shard in &cached_shards {
+            if current_size.saturating_add(needed_bytes) <= self.cache_limit_bytes {
+                break;
+            }
+            if shard_to_keep == Some(shard.name.as_str()) {
+                continue;
+            }
+
+            let download_lock = match Self::open_lock_file(&self.download_lock_path(&shard.name)) {
+                Ok(file) => file,
+                Err(_) => continue,
+            };
+            if download_lock.try_lock_exclusive().is_err() {
+                continue;
+            }
+
+            let lock_path = self.shard_lock_path(&shard.name);
+            let lock_file = match Self::open_lock_file(&lock_path) {
+                Ok(file) => file,
