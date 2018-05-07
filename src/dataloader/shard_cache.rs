@@ -306,3 +306,21 @@ impl ShardCache {
             let lock_path = self.shard_lock_path(&shard.name);
             let lock_file = match Self::open_lock_file(&lock_path) {
                 Ok(file) => file,
+                Err(_) => continue,
+            };
+
+            // A shared reader lock means another process is using this shard.
+            // Keep the exclusive lock held until deletion completes, closing the
+            // old check/unlock/delete race.
+            if lock_file.try_lock_exclusive().is_err() {
+                continue;
+            }
+
+            let path = self.get_cached_shard_path(&shard.name);
+            match fs::remove_file(&path).await {
+                Ok(()) => {
+                    current_size = current_size.saturating_sub(shard.size);
+                    let _ = fs::remove_file(self.access_path(&shard.name)).await;
+                }
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
+                    current_size = current_size.saturating_sub(shard.size);
