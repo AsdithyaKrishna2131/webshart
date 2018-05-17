@@ -324,3 +324,21 @@ impl ShardCache {
                 }
                 Err(error) if error.kind() == std::io::ErrorKind::NotFound => {
                     current_size = current_size.saturating_sub(shard.size);
+                }
+                Err(_) => {}
+            }
+            // Both lock files are deliberately dropped only after remove_file
+            // returns.
+        }
+
+        let remaining = self.scan_cached_shards().await?;
+        self.replace_metadata(&remaining);
+        Ok(())
+    }
+
+    pub async fn get_cached_file_size(&self, shard_name: &str) -> Result<u64> {
+        if let Some(temp_path) = self.get_active_download_path(shard_name) {
+            if let Ok(metadata) = fs::metadata(&temp_path).await {
+                return Ok(metadata.len());
+            }
+        }
