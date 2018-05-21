@@ -342,3 +342,20 @@ impl ShardCache {
                 return Ok(metadata.len());
             }
         }
+
+        let path = self.get_cached_shard_path(shard_name);
+        if path.is_file() {
+            return fs::metadata(&path)
+                .await
+                .map(|metadata| metadata.len())
+                .map_err(WebshartError::Io);
+        }
+
+        Err(WebshartError::CacheMiss(shard_name.to_string()))
+    }
+
+    pub fn get_active_download_path(&self, shard_name: &str) -> Option<PathBuf> {
+        self.active_downloads
+            .lock()
+            .unwrap()
+            .get(shard_name)
