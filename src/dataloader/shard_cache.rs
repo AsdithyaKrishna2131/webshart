@@ -359,3 +359,21 @@ impl ShardCache {
             .lock()
             .unwrap()
             .get(shard_name)
+            .cloned()
+    }
+
+    pub async fn get_download_progress(&self, shard_name: &str) -> Option<u64> {
+        let path = self.get_active_download_path(shard_name)?;
+        fs::metadata(path).await.ok().map(|metadata| metadata.len())
+    }
+
+    async fn touch_shard(&self, shard_name: &str) {
+        // The marker's mtime is a process-shared LRU signal.
+        let _ = fs::write(self.access_path(shard_name), b"").await;
+
+        let mut queue = self.lru_queue.lock().unwrap();
+        if let Some(position) = queue.iter().position(|name| name == shard_name) {
+            queue.remove(position);
+        }
+        queue.push_back(shard_name.to_string());
+    }
