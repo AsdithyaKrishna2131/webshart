@@ -377,3 +377,21 @@ impl ShardCache {
         }
         queue.push_back(shard_name.to_string());
     }
+
+    pub async fn initialize_from_disk(&mut self) -> Result<()> {
+        self.cleanup_stale_downloads().await?;
+        let mut cached_shards = self.scan_cached_shards().await?;
+        cached_shards.sort_by_key(|shard| shard.last_used);
+        self.replace_metadata(&cached_shards);
+        Ok(())
+    }
+
+    async fn cleanup_stale_downloads(&self) -> Result<()> {
+        let mut entries = fs::read_dir(self.download_dir())
+            .await
+            .map_err(WebshartError::Io)?;
+
+        while let Some(entry) = entries.next_entry().await.map_err(WebshartError::Io)? {
+            let filename = entry.file_name();
+            let Some(filename) = filename.to_str() else {
+                continue;
