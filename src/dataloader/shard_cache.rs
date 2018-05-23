@@ -395,3 +395,21 @@ impl ShardCache {
             let filename = entry.file_name();
             let Some(filename) = filename.to_str() else {
                 continue;
+            };
+            let Some(shard_key) = filename.split('.').next() else {
+                continue;
+            };
+            if shard_key.len() != 64 {
+                continue;
+            }
+
+            let lock_file = match Self::open_lock_file(&self.download_lock_path_for_key(shard_key))
+            {
+                Ok(file) => file,
+                Err(_) => continue,
+            };
+            if lock_file.try_lock_exclusive().is_ok() {
+                let _ = fs::remove_file(entry.path()).await;
+            }
+        }
+
