@@ -430,3 +430,21 @@ impl ShardCache {
         }
 
         Ok(())
+    }
+
+    async fn scan_cached_shards(&self) -> Result<Vec<CachedShard>> {
+        let mut entries = fs::read_dir(&self.cache_dir)
+            .await
+            .map_err(WebshartError::Io)?;
+        let mut cached_shards = Vec::new();
+
+        while let Some(entry) = entries.next_entry().await.map_err(WebshartError::Io)? {
+            let metadata = match entry.metadata().await {
+                Ok(metadata) if metadata.is_file() => metadata,
+                _ => continue,
+            };
+            let Some(filename) = entry.file_name().to_str().map(str::to_owned) else {
+                continue;
+            };
+            if filename.ends_with(".download") {
+                continue;
