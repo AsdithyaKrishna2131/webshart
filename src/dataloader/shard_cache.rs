@@ -466,3 +466,21 @@ impl ShardCache {
 
     fn replace_metadata(&self, cached_shards: &[CachedShard]) {
         let mut sizes = self.shard_sizes.lock().unwrap();
+        let mut queue = self.lru_queue.lock().unwrap();
+        let mut current_size = self.current_size_bytes.lock().unwrap();
+        sizes.clear();
+        queue.clear();
+        *current_size = 0;
+
+        for shard in cached_shards {
+            sizes.insert(shard.name.clone(), shard.size);
+            queue.push_back(shard.name.clone());
+            *current_size += shard.size;
+        }
+    }
+
+    fn record_cached_shard(&self, shard_name: &str, shard_size: u64) {
+        let mut sizes = self.shard_sizes.lock().unwrap();
+        let mut queue = self.lru_queue.lock().unwrap();
+        let mut current_size = self.current_size_bytes.lock().unwrap();
+
