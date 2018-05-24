@@ -484,3 +484,20 @@ impl ShardCache {
         let mut queue = self.lru_queue.lock().unwrap();
         let mut current_size = self.current_size_bytes.lock().unwrap();
 
+        if let Some(previous_size) = sizes.insert(shard_name.to_string(), shard_size) {
+            *current_size = current_size.saturating_sub(previous_size);
+        }
+        if let Some(position) = queue.iter().position(|name| name == shard_name) {
+            queue.remove(position);
+        }
+        queue.push_back(shard_name.to_string());
+        *current_size = current_size.saturating_add(shard_size);
+    }
+
+    async fn lock_exclusive(&self, path: PathBuf) -> Result<ExclusiveLockGuard> {
+        let file = tokio::task::spawn_blocking(move || -> std::io::Result<std::fs::File> {
+            let file = Self::open_lock_file(&path)?;
+            file.lock_exclusive()?;
+            Ok(file)
+        })
+        .await
