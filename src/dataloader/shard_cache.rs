@@ -519,3 +519,21 @@ impl ShardCache {
             std::io::ErrorKind::Other,
             format!("Cache lock task failed: {}", error),
         ))
+    }
+
+    fn shard_key(shard_name: &str) -> String {
+        let digest = Sha256::digest(shard_name.as_bytes());
+        digest_to_hex(digest)
+    }
+
+    fn lock_dir(&self) -> PathBuf {
+        self.cache_dir.join(LOCK_DIR_NAME)
+    }
+
+    fn download_dir(&self) -> PathBuf {
+        self.cache_dir.join(DOWNLOAD_DIR_NAME)
+    }
+
+    fn access_dir(&self) -> PathBuf {
+        self.cache_dir.join(ACCESS_DIR_NAME)
+    }
