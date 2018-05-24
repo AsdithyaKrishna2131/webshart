@@ -448,3 +448,21 @@ impl ShardCache {
             };
             if filename.ends_with(".download") {
                 continue;
+            }
+
+            let last_used = match fs::metadata(self.access_path(&filename)).await {
+                Ok(access_metadata) => access_metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH),
+                Err(_) => metadata.modified().unwrap_or(SystemTime::UNIX_EPOCH),
+            };
+            cached_shards.push(CachedShard {
+                name: filename,
+                size: metadata.len(),
+                last_used,
+            });
+        }
+
+        Ok(cached_shards)
+    }
+
+    fn replace_metadata(&self, cached_shards: &[CachedShard]) {
+        let mut sizes = self.shard_sizes.lock().unwrap();
