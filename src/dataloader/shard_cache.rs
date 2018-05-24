@@ -501,3 +501,21 @@ impl ShardCache {
             Ok(file)
         })
         .await
+        .map_err(Self::join_error)??;
+        Ok(ExclusiveLockGuard { file })
+    }
+
+    fn open_lock_file(path: &Path) -> std::io::Result<std::fs::File> {
+        OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .truncate(false)
+            .open(path)
+    }
+
+    fn join_error(error: tokio::task::JoinError) -> WebshartError {
+        WebshartError::Io(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Cache lock task failed: {}", error),
+        ))
