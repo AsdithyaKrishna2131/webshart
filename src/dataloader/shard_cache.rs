@@ -413,3 +413,20 @@ impl ShardCache {
             }
         }
 
+        // Clean up temporary files left by webshart versions that downloaded
+        // directly in the cache root. Current downloads use the protected
+        // download directory above.
+        let mut entries = fs::read_dir(&self.cache_dir)
+            .await
+            .map_err(WebshartError::Io)?;
+        while let Some(entry) = entries.next_entry().await.map_err(WebshartError::Io)? {
+            if entry
+                .file_name()
+                .to_str()
+                .is_some_and(|name| name.ends_with(".download"))
+            {
+                let _ = fs::remove_file(entry.path()).await;
+            }
+        }
+
+        Ok(())
