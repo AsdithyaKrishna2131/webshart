@@ -537,3 +537,20 @@ impl ShardCache {
     fn access_dir(&self) -> PathBuf {
         self.cache_dir.join(ACCESS_DIR_NAME)
     }
+
+    fn cache_lock_path(&self) -> PathBuf {
+        self.lock_dir().join(CACHE_LOCK_NAME)
+    }
+
+    fn shard_lock_path(&self, shard_name: &str) -> PathBuf {
+        self.lock_dir()
+            .join(format!("{}.shard.lock", Self::shard_key(shard_name)))
+    }
+
+    fn download_lock_path(&self, shard_name: &str) -> PathBuf {
+        self.download_lock_path_for_key(&Self::shard_key(shard_name))
+    }
+
+    fn download_lock_path_for_key(&self, shard_key: &str) -> PathBuf {
+        self.lock_dir().join(format!("{}.download.lock", shard_key))
+    }
