@@ -572,3 +572,21 @@ impl ShardCache {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+    use std::process::{Command, Stdio};
+    use std::thread;
+    use std::time::Duration;
+    use tempfile::tempdir;
+
+    const CHILD_CACHE_DIR: &str = "WEBSHART_TEST_CHILD_CACHE_DIR";
+    const CHILD_READY_PATH: &str = "WEBSHART_TEST_CHILD_READY_PATH";
+    const CHILD_RELEASE_PATH: &str = "WEBSHART_TEST_CHILD_RELEASE_PATH";
+    const CHILD_TEST_NAME: &str = "dataloader::shard_cache::tests::shard_lock_child_process";
+
+    fn cache_with_byte_limit(path: &Path, bytes: u64) -> ShardCache {
+        ShardCache::new(
+            path.to_path_buf(),
+            bytes as f64 / (1024.0 * 1024.0 * 1024.0),
+            2,
+        )
+    }
