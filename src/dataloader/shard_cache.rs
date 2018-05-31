@@ -554,3 +554,21 @@ impl ShardCache {
     fn download_lock_path_for_key(&self, shard_key: &str) -> PathBuf {
         self.lock_dir().join(format!("{}.download.lock", shard_key))
     }
+
+    fn access_path(&self, shard_name: &str) -> PathBuf {
+        self.access_dir().join(Self::shard_key(shard_name))
+    }
+
+    fn temp_download_path(&self, shard_name: &str) -> PathBuf {
+        let id = DOWNLOAD_ID.fetch_add(1, Ordering::Relaxed);
+        self.download_dir().join(format!(
+            "{}.{}.{}.download",
+            Self::shard_key(shard_name),
+            std::process::id(),
+            id
+        ))
+    }
+}
+
+#[cfg(test)]
+mod tests {
