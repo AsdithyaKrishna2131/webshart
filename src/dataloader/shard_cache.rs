@@ -590,3 +590,21 @@ mod tests {
             2,
         )
     }
+
+    #[tokio::test]
+    async fn eviction_does_not_remove_a_shard_locked_by_another_cache() {
+        let temp_dir = tempdir().unwrap();
+        fs::write(temp_dir.path().join("locked.tar"), vec![0; 10])
+            .await
+            .unwrap();
+
+        let mut reader_cache = cache_with_byte_limit(temp_dir.path(), 10);
+        let mut evictor_cache = cache_with_byte_limit(temp_dir.path(), 10);
+        reader_cache.ensure_cache_dir().await.unwrap();
+        reader_cache.initialize_from_disk().await.unwrap();
+        evictor_cache.initialize_from_disk().await.unwrap();
+
+        let read_lock = reader_cache
+            .lock_shard_for_reading("locked.tar")
+            .await
+            .unwrap();
