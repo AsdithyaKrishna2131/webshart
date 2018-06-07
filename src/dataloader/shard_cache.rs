@@ -608,3 +608,20 @@ mod tests {
             .lock_shard_for_reading("locked.tar")
             .await
             .unwrap();
+        let cache_lock = evictor_cache
+            .lock_exclusive(evictor_cache.cache_lock_path())
+            .await
+            .unwrap();
+        evictor_cache.evict_if_needed_locked(1, None).await.unwrap();
+        drop(cache_lock);
+        assert!(temp_dir.path().join("locked.tar").exists());
+
+        drop(read_lock);
+        let cache_lock = evictor_cache
+            .lock_exclusive(evictor_cache.cache_lock_path())
+            .await
+            .unwrap();
+        evictor_cache.evict_if_needed_locked(1, None).await.unwrap();
+        drop(cache_lock);
+        assert!(!temp_dir.path().join("locked.tar").exists());
+    }
