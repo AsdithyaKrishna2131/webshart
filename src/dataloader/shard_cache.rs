@@ -625,3 +625,21 @@ mod tests {
         drop(cache_lock);
         assert!(!temp_dir.path().join("locked.tar").exists());
     }
+
+    // This ignored test is invoked directly by the multi-process regression
+    // test below. Keeping the lock holder in the test binary avoids requiring a
+    // separate test executable while still crossing a real OS process boundary.
+    #[test]
+    #[ignore]
+    fn shard_lock_child_process() {
+        let cache_dir = PathBuf::from(std::env::var_os(CHILD_CACHE_DIR).unwrap());
+        let ready_path = PathBuf::from(std::env::var_os(CHILD_READY_PATH).unwrap());
+        let release_path = PathBuf::from(std::env::var_os(CHILD_RELEASE_PATH).unwrap());
+        let runtime = tokio::runtime::Runtime::new().unwrap();
+
+        runtime.block_on(async {
+            let mut cache = cache_with_byte_limit(&cache_dir, 10);
+            cache.ensure_cache_dir().await.unwrap();
+            cache.initialize_from_disk().await.unwrap();
+            let _read_lock = cache.lock_shard_for_reading("locked.tar").await.unwrap();
+            fs::write(&ready_path, b"ready").await.unwrap();
