@@ -643,3 +643,21 @@ mod tests {
             cache.initialize_from_disk().await.unwrap();
             let _read_lock = cache.lock_shard_for_reading("locked.tar").await.unwrap();
             fs::write(&ready_path, b"ready").await.unwrap();
+
+            for _ in 0..500 {
+                if release_path.exists() {
+                    return;
+                }
+                thread::sleep(Duration::from_millis(10));
+            }
+            panic!("parent process did not release child shard lock");
+        });
+    }
+
+    #[tokio::test]
+    async fn eviction_respects_a_lock_held_by_another_process() {
+        let temp_dir = tempdir().unwrap();
+        let ready_path = temp_dir.path().join("child.ready");
+        let release_path = temp_dir.path().join("child.release");
+        let shard_path = temp_dir.path().join("locked.tar");
+        let cache = cache_with_byte_limit(temp_dir.path(), 10);
