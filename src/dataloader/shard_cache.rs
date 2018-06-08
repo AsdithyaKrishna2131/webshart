@@ -679,3 +679,20 @@ mod tests {
             }
             if let Some(status) = child.try_wait().unwrap() {
                 panic!("lock-holder child exited early with {status}");
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+        assert!(ready_path.exists(), "lock-holder child never became ready");
+
+        let mut evictor_cache = cache_with_byte_limit(temp_dir.path(), 10);
+        evictor_cache.initialize_from_disk().await.unwrap();
+        let cache_lock = evictor_cache
+            .lock_exclusive(evictor_cache.cache_lock_path())
+            .await
+            .unwrap();
+        evictor_cache.evict_if_needed_locked(1, None).await.unwrap();
+        drop(cache_lock);
+        assert!(shard_path.exists());
+
+        fs::write(&release_path, b"release").await.unwrap();
+        assert!(child.wait().unwrap().success());
