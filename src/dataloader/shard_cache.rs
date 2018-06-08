@@ -661,3 +661,21 @@ mod tests {
         let release_path = temp_dir.path().join("child.release");
         let shard_path = temp_dir.path().join("locked.tar");
         let cache = cache_with_byte_limit(temp_dir.path(), 10);
+        cache.ensure_cache_dir().await.unwrap();
+        fs::write(&shard_path, vec![0; 10]).await.unwrap();
+
+        let mut child = Command::new(std::env::current_exe().unwrap())
+            .args(["--ignored", "--exact", CHILD_TEST_NAME, "--nocapture"])
+            .env(CHILD_CACHE_DIR, temp_dir.path())
+            .env(CHILD_READY_PATH, &ready_path)
+            .env(CHILD_RELEASE_PATH, &release_path)
+            .stdout(Stdio::null())
+            .spawn()
+            .unwrap();
+
+        for _ in 0..500 {
+            if ready_path.exists() {
+                break;
+            }
+            if let Some(status) = child.try_wait().unwrap() {
+                panic!("lock-holder child exited early with {status}");
