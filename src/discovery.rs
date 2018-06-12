@@ -185,3 +185,43 @@ impl DiscoveredDataset {
                             println!("[webshart] Loaded metadata for {} from cache", shard_name);
                             Some(metadata)
                         }
+                        Err(e) => {
+                            eprintln!(
+                                "[webshart] Failed to parse cached metadata for {}: {}",
+                                shard_name, e
+                            );
+                            // Remove corrupted cache file
+                            let _ = fs::remove_file(&cache_path);
+                            None
+                        }
+                    }
+                }
+                Err(e) => {
+                    eprintln!(
+                        "[webshart] Failed to read cached metadata for {}: {}",
+                        shard_name, e
+                    );
+                    None
+                }
+            }
+        } else {
+            None
+        }
+    }
+
+    /// Save metadata to cache
+    fn save_metadata_to_cache(&self, shard_name: &str, metadata: &ShardMetadata) -> Result<()> {
+        if let Some(cache_path) = self.get_cached_metadata_path(shard_name) {
+            if let Some(parent) = cache_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            let json = serde_json::to_string_pretty(metadata)?;
+            fs::write(&cache_path, json)?;
+            println!("[webshart] Cached metadata for {}", shard_name);
+        }
+        Ok(())
+    }
+
+    /// Get total number of files (requires loading all metadata)
+    pub fn total_files(&mut self) -> Result<usize> {
+        self.ensure_all_metadata_loaded()?;
