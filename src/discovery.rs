@@ -225,3 +225,42 @@ impl DiscoveredDataset {
     /// Get total number of files (requires loading all metadata)
     pub fn total_files(&mut self) -> Result<usize> {
         self.ensure_all_metadata_loaded()?;
+        Ok(self
+            .shards
+            .iter()
+            .filter_map(|s| s.metadata.as_ref())
+            .map(|m| m.num_files())
+            .sum())
+    }
+
+    /// Get total size (requires loading all metadata)
+    pub fn total_size(&mut self) -> Result<u64> {
+        self.ensure_all_metadata_loaded()?;
+        Ok(self
+            .shards
+            .iter()
+            .filter_map(|s| s.metadata.as_ref())
+            .map(|m| m.filesize)
+            .sum())
+    }
+
+    /// Get quick stats from cached values (instant, no metadata loading)
+    pub fn quick_stats(&self) -> (Option<u64>, Option<usize>) {
+        (self.cached_total_size, self.cached_total_files)
+    }
+
+    /// Ensure metadata is loaded for a specific shard
+    pub fn ensure_shard_metadata(&mut self, shard_index: usize) -> Result<()> {
+        // Scope the first borrow to check if metadata is already loaded
+        if let Some(shard) = self.shards.get(shard_index) {
+            if shard.metadata.is_some() {
+                return Ok(());
+            }
+        } else {
+            return Err(WebshartError::InvalidShardFormat(format!(
+                "File index {} out of range for shard {}",
+                shard_index, self.name
+            )));
+        }
+
+        // Clone shard info to release the borrow on `self`
