@@ -264,3 +264,42 @@ impl DiscoveredDataset {
         }
 
         // Clone shard info to release the borrow on `self`
+        let (shard_name, json_path) = {
+            let shard = &self.shards[shard_index];
+            (shard.name.clone(), shard.json_path.clone())
+        };
+
+        // First, check cache
+        if let Some(cached) = self.load_cached_metadata(&shard_name) {
+            if let Some(shard) = self.shards.get_mut(shard_index) {
+                shard.metadata = Some(cached);
+            }
+            return Ok(());
+        }
+
+        // Apply rate limit delay if needed
+        if let Some(delay) = self.rate_limit_delay {
+            println!("[webshart] Rate limit delay: {:?}", delay);
+            std::thread::sleep(delay);
+            // Reset delay after using it
+            self.rate_limit_delay = None;
+        }
+
+        let discovery = DatasetDiscovery::with_runtime(self.runtime.clone())
+            .with_optional_token(self.discovery_token.clone());
+
+        // Use block_in_place to avoid blocking the async runtime
+        let result = tokio::task::block_in_place(|| {
+            if json_path.starts_with("http") {
+                self.runtime
+                    .block_on(discovery.load_remote_metadata(&json_path))
+            } else {
+                self.runtime
+                    .block_on(discovery.load_local_metadata(&json_path))
+            }
+        });
+
+        match result {
+            Ok(metadata) => {
+                // Save to cache if caching is enabled
+                let _ = self.save_metadata_to_cache(&shard_name, &metadata);
