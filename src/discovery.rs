@@ -303,3 +303,43 @@ impl DiscoveredDataset {
             Ok(metadata) => {
                 // Save to cache if caching is enabled
                 let _ = self.save_metadata_to_cache(&shard_name, &metadata);
+                // Re-borrow to update the shard
+                if let Some(shard) = self.shards.get_mut(shard_index) {
+                    shard.metadata = Some(metadata);
+                }
+                Ok(())
+            }
+            Err(e) => {
+                // Check if it's a rate limit error
+                if let WebshartError::RateLimited = e {
+                    // Set exponential backoff delay
+                    let current_delay = self.rate_limit_delay.unwrap_or(Duration::from_secs(1));
+                    self.rate_limit_delay = Some(current_delay * 2);
+                    println!(
+                        "[webshart] Rate limited, next delay will be {:?}",
+                        self.rate_limit_delay
+                    );
+                }
+                Err(e)
+            }
+        }
+    }
+
+    /// Clear the metadata cache for this dataset
+    pub fn clear_cache(&self) -> Result<()> {
+        if let Some(cache_dir) = &self.cache_dir {
+            if cache_dir.exists() {
+                fs::remove_dir_all(cache_dir)?;
+                println!("[webshart] Cleared metadata cache for {}", self.name);
+            }
+        }
+        Ok(())
+    }
+
+    /// Get cache statistics
+    pub fn cache_stats(&self) -> Result<(usize, u64)> {
+        if let Some(cache_dir) = &self.cache_dir {
+            let mut count = 0;
+            let mut total_size = 0u64;
+
+            if cache_dir.exists() {
