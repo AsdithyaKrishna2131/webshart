@@ -343,3 +343,42 @@ impl DiscoveredDataset {
             let mut total_size = 0u64;
 
             if cache_dir.exists() {
+                for entry in fs::read_dir(cache_dir)? {
+                    let entry = entry?;
+                    if entry.path().extension().and_then(|s| s.to_str()) == Some("json") {
+                        count += 1;
+                        total_size += entry.metadata()?.len();
+                    }
+                }
+            }
+
+            Ok((count, total_size))
+        } else {
+            Ok((0, 0))
+        }
+    }
+
+    /// Ensure all metadata is loaded
+    fn ensure_all_metadata_loaded(&mut self) -> Result<()> {
+        // Use index-based loop to avoid borrow checker issues
+        let num_shards = self.shards.len();
+        for i in 0..num_shards {
+            self.ensure_shard_metadata(i)?;
+        }
+        Ok(())
+    }
+
+    /// Find which shard contains a file by global index (loads metadata as needed)
+    pub fn find_shard_for_file(&mut self, file_index: usize) -> Result<Option<(usize, usize)>> {
+        let mut current_offset = 0;
+
+        // Use index-based loop to avoid borrow checker issues
+        for shard_idx in 0..self.shards.len() {
+            self.ensure_shard_metadata(shard_idx)?;
+
+            if let Some(metadata) = &self.shards[shard_idx].metadata {
+                let num_files = metadata.num_files();
+                if file_index < current_offset + num_files {
+                    return Ok(Some((shard_idx, file_index - current_offset)));
+                }
+                current_offset += num_files;
