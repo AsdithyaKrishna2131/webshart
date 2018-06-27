@@ -382,3 +382,43 @@ impl DiscoveredDataset {
                     return Ok(Some((shard_idx, file_index - current_offset)));
                 }
                 current_offset += num_files;
+            }
+        }
+
+        Ok(None)
+    }
+
+    /// Open a shard for reading
+    pub fn open_shard(&mut self, shard_index: usize) -> Result<ShardReader> {
+        // Ensure metadata is loaded
+        self.ensure_shard_metadata(shard_index)?;
+
+        if let Some(shard) = self.shards.get(shard_index) {
+            if let Some(metadata) = &shard.metadata {
+                ShardReader::new(
+                    &shard.tar_path,
+                    self.is_remote,
+                    metadata.clone(),
+                    self.discovery_token.clone(),
+                    self.runtime.clone(),
+                )
+            } else {
+                Err(WebshartError::InvalidShardFormat(
+                    "Metadata not loaded".to_string(),
+                ))
+            }
+        } else {
+            Err(WebshartError::InvalidShardFormat(format!(
+                "Shard index {} out of range",
+                shard_index
+            )))
+        }
+    }
+}
+
+/// Reader for accessing files within a shard
+pub struct ShardReader {
+    /// Path or URL to the tar file
+    tar_location: String,
+
+    /// Whether this is a remote shard
