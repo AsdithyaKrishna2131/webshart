@@ -422,3 +422,42 @@ pub struct ShardReader {
     tar_location: String,
 
     /// Whether this is a remote shard
+    is_remote: bool,
+
+    /// Shard metadata
+    metadata: ShardMetadata,
+
+    /// Optional HuggingFace token for remote access
+    hf_token: Option<String>,
+
+    /// Runtime for async operations
+    runtime: Arc<Runtime>,
+}
+
+impl ShardReader {
+    /// Create a new shard reader
+    pub fn new(
+        tar_location: &str,
+        is_remote: bool,
+        metadata: ShardMetadata,
+        hf_token: Option<String>,
+        runtime: Arc<Runtime>,
+    ) -> Result<Self> {
+        Ok(Self {
+            tar_location: tar_location.to_string(),
+            is_remote,
+            metadata,
+            hf_token,
+            runtime,
+        })
+    }
+
+    /// Read a file by index within this shard
+    pub fn read_file(&self, file_index: usize) -> Result<Vec<u8>> {
+        if file_index >= self.metadata.num_files() {
+            return Err(WebshartError::InvalidShardFormat(format!(
+                "File index {} out of range for shard",
+                file_index
+            )));
+        }
+
