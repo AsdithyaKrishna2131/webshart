@@ -461,3 +461,43 @@ impl ShardReader {
             )));
         }
 
+        // Use get_file_by_index to access files by numeric index
+        let (filename, file_info) =
+            self.metadata.get_file_by_index(file_index).ok_or_else(|| {
+                WebshartError::InvalidShardFormat(format!(
+                    "File index {} not found in metadata",
+                    file_index
+                ))
+            })?;
+
+        if self.is_remote {
+            self.runtime.block_on(self.read_file_remote(
+                &filename,
+                file_info.offset,
+                file_info.length,
+            ))
+        } else {
+            self.read_file_local(&filename, file_info.offset, file_info.length)
+        }
+    }
+
+    /// Read a logical sample by index within this shard, excluding paired JSON sidecars.
+    pub fn read_sample(&self, sample_index: usize) -> Result<Vec<u8>> {
+        let (filename, file_info) =
+            self.metadata
+                .get_sample_by_index(sample_index)
+                .ok_or_else(|| {
+                    WebshartError::InvalidShardFormat(format!(
+                        "Sample index {} not found in metadata",
+                        sample_index
+                    ))
+                })?;
+
+        if self.is_remote {
+            self.runtime.block_on(self.read_file_remote(
+                &filename,
+                file_info.offset,
+                file_info.length,
+            ))
+        } else {
+            self.read_file_local(&filename, file_info.offset, file_info.length)
