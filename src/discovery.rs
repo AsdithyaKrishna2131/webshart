@@ -540,3 +540,43 @@ impl ShardReader {
         // For this dataset, offsets point directly to file content
         // Just read the bytes from offset to offset+length
         let mut request = client
+            .get(&self.tar_location)
+            .header("Range", format!("bytes={}-{}", offset, offset + length - 1));
+
+        if let Some(token) = &self.hf_token {
+            request = request.bearer_auth(token);
+        }
+
+        let response = request.send().await?;
+        if !response.status().is_success() {
+            return Err(WebshartError::InvalidShardFormat(format!(
+                "Failed to read file content: {}",
+                response.status()
+            )));
+        }
+
+        Ok(response.bytes().await?.to_vec())
+    }
+
+    /// Read a file from local tar archive
+    fn read_file_local(&self, filename: &str, offset: u64, length: u64) -> Result<Vec<u8>> {
+        use std::io::{Read, Seek, SeekFrom};
+
+        let mut file = fs::File::open(&self.tar_location)?;
+        file.seek(SeekFrom::Start(offset))?;
+        let mut buffer = vec![0u8; length as usize];
+        file.read_exact(&mut buffer)?;
+
+        // Debug: verify WEBP files
+        if filename.ends_with(".webp") && buffer.len() >= 12 {
+            let riff = &buffer[0..4];
+            let webp = &buffer[8..12];
+            if riff != b"RIFF" || webp != b"WEBP" {
+                eprintln!(
+                    "[webshart] Warning: {} doesn't look like a valid WEBP file",
+                    filename
+                );
+            }
+        }
+
+        Ok(buffer)
