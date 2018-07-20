@@ -501,3 +501,42 @@ impl ShardReader {
             ))
         } else {
             self.read_file_local(&filename, file_info.offset, file_info.length)
+        }
+    }
+
+    /// Read the paired JSON metadata sidecar for a logical sample, if present.
+    pub fn read_sample_json(&self, sample_index: usize) -> Result<Option<Vec<u8>>> {
+        let (_filename, file_info) =
+            self.metadata
+                .get_sample_by_index(sample_index)
+                .ok_or_else(|| {
+                    WebshartError::InvalidShardFormat(format!(
+                        "Sample index {} not found in metadata",
+                        sample_index
+                    ))
+                })?;
+
+        if let (Some(json_path), Some(offset), Some(length)) = (
+            file_info.json_path.as_deref(),
+            file_info.json_offset,
+            file_info.json_length,
+        ) {
+            if self.is_remote {
+                self.runtime
+                    .block_on(self.read_file_remote(json_path, offset, length))
+                    .map(Some)
+            } else {
+                self.read_file_local(json_path, offset, length).map(Some)
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    /// Read a file from remote tar archive using HTTP range requests
+    async fn read_file_remote(&self, _filename: &str, offset: u64, length: u64) -> Result<Vec<u8>> {
+        let client = reqwest::Client::new();
+
+        // For this dataset, offsets point directly to file content
+        // Just read the bytes from offset to offset+length
+        let mut request = client
