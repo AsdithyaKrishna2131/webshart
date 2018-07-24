@@ -580,3 +580,42 @@ impl ShardReader {
         }
 
         Ok(buffer)
+    }
+
+    /// Get list of filenames in this shard
+    pub fn filenames(&self) -> Vec<String> {
+        self.metadata.filenames()
+    }
+
+    /// Get list of logical sample filenames in this shard.
+    pub fn sample_filenames(&self) -> Vec<String> {
+        self.metadata.sample_filenames()
+    }
+
+    /// Get number of files in this shard
+    pub fn num_files(&self) -> usize {
+        self.metadata.num_files()
+    }
+
+    /// Get number of logical samples in this shard.
+    pub fn num_samples(&self) -> usize {
+        self.metadata.num_samples()
+    }
+}
+
+/// Discovery service for finding dataset shards
+#[derive(Clone)]
+pub struct DatasetDiscovery {
+    hf_token: Option<String>,
+    shard_pattern: Regex,
+    client: reqwest::Client,
+    runtime: Arc<Runtime>,
+    metadata_resolver: MetadataResolver,
+}
+
+impl DatasetDiscovery {
+    /// Create a new discovery service
+    pub fn new() -> Self {
+        Self {
+            hf_token: None,
+            // Match patterns like: data-0000.tar, shard_001.tar, etc.
