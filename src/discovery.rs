@@ -619,3 +619,42 @@ impl DatasetDiscovery {
         Self {
             hf_token: None,
             // Match patterns like: data-0000.tar, shard_001.tar, etc.
+            shard_pattern: Regex::new(r"^(.+?)\.tar$").unwrap(),
+            client: reqwest::Client::new(),
+            runtime: Arc::new(Runtime::new().expect("Failed to create Tokio runtime")),
+            metadata_resolver: MetadataResolver::new(
+                None,
+                None,
+                Arc::new(Runtime::new().expect("Failed to create Tokio runtime")),
+            ),
+        }
+    }
+
+    /// Create with existing runtime
+    pub fn with_runtime(runtime: Arc<Runtime>) -> Self {
+        Self {
+            hf_token: None,
+            shard_pattern: Regex::new(r"^(.+?)\.tar$").unwrap(),
+            client: reqwest::Client::new(),
+            runtime: runtime.clone(),
+            metadata_resolver: MetadataResolver::new(None, None, runtime.clone()),
+        }
+    }
+
+    /// Set HuggingFace token
+    pub fn with_hf_token(mut self, token: String) -> Self {
+        self.hf_token = Some(token);
+        self.metadata_resolver = MetadataResolver::new(
+            self.metadata_resolver.get_source(),
+            self.hf_token.clone(),
+            self.runtime.clone(),
+        );
+        self
+    }
+
+    /// Set optional token
+    pub fn with_optional_token(mut self, token: Option<String>) -> Self {
+        self.hf_token = token;
+        self.metadata_resolver = MetadataResolver::new(
+            self.metadata_resolver.get_source(),
+            self.hf_token.clone(),
