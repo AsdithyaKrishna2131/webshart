@@ -658,3 +658,43 @@ impl DatasetDiscovery {
         self.metadata_resolver = MetadataResolver::new(
             self.metadata_resolver.get_source(),
             self.hf_token.clone(),
+            self.runtime.clone(),
+        );
+        self
+    }
+
+    /// Set custom shard pattern
+    pub fn with_pattern(mut self, pattern: &str) -> Result<Self> {
+        self.shard_pattern =
+            Regex::new(pattern).map_err(|e| WebshartError::InvalidShardFormat(e.to_string()))?;
+        Ok(self)
+    }
+
+    pub fn with_metadata_source(mut self, metadata_source: Option<String>) -> Self {
+        if let Some(source) = metadata_source {
+            self.metadata_resolver =
+                MetadataResolver::new(Some(source), self.hf_token.clone(), self.runtime.clone());
+        }
+        self
+    }
+
+    fn collect_local_tar_paths(&self, directory: &Path, paths: &mut Vec<PathBuf>) -> Result<()> {
+        for entry in fs::read_dir(directory)? {
+            let entry = entry?;
+            let file_type = entry.file_type()?;
+            if file_type.is_dir() {
+                self.collect_local_tar_paths(&entry.path(), paths)?;
+            } else if file_type.is_file()
+                && self
+                    .shard_pattern
+                    .is_match(&entry.file_name().to_string_lossy())
+            {
+                paths.push(entry.path());
+            }
+        }
+        Ok(())
+    }
+
+    /// Discover shards in a local directory
+    pub fn discover_local(&self, path: &Path) -> Result<DiscoveredDataset> {
+        let mut shards = Vec::new();
