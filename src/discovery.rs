@@ -698,3 +698,42 @@ impl DatasetDiscovery {
     /// Discover shards in a local directory
     pub fn discover_local(&self, path: &Path) -> Result<DiscoveredDataset> {
         let mut shards = Vec::new();
+        let mut tar_paths = Vec::new();
+        self.collect_local_tar_paths(path, &mut tar_paths)?;
+        tar_paths.sort();
+
+        for tar_path_buf in tar_paths {
+            let file_name = tar_path_buf
+                .file_name()
+                .map(|name| name.to_string_lossy().to_string())
+                .unwrap_or_default();
+
+            if let Some(captures) = self.shard_pattern.captures(&file_name) {
+                let leaf_name = captures.get(1).unwrap().as_str();
+                let relative_parent = tar_path_buf
+                    .parent()
+                    .and_then(|parent| parent.strip_prefix(path).ok())
+                    .filter(|parent| !parent.as_os_str().is_empty());
+                let relative_name = relative_parent
+                    .map(|parent| parent.join(leaf_name))
+                    .unwrap_or_else(|| PathBuf::from(leaf_name));
+                let relative_name = relative_name.to_string_lossy().replace('\\', "/");
+                let tar_path = tar_path_buf.to_string_lossy().to_string();
+
+                // Use resolver to find metadata path
+                let json_path =
+                    self.metadata_resolver
+                        .resolve_metadata_path(&tar_path, &relative_name, false);
+
+                // Check if metadata exists
+                if self.metadata_resolver.metadata_exists(&json_path, false) {
+                    shards.push(ShardPair {
+                        name: relative_name,
+                        tar_path,
+                        json_path,
+                        metadata: None,
+                    });
+                }
+            }
+        }
+
