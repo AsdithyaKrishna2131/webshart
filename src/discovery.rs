@@ -816,3 +816,43 @@ impl DatasetDiscovery {
                         };
                         *dirs.entry(dir.to_string()).or_insert(0) += 1;
                     }
+
+                    println!("[webshart] Found {} total shards:", shards.len());
+                    for (dir, count) in dirs.iter() {
+                        println!("  - {}: {} shards", dir, count);
+                    }
+
+                    all_shards = shards;
+                }
+                Err(e) => {
+                    println!(
+                        "[webshart] Dataset info API failed: {}, falling back to tree API",
+                        e
+                    );
+
+                    // Fall back to tree API with subdirectory discovery
+                    // First, get the root directory listing
+                    let root_url =
+                        format!("https://huggingface.co/api/datasets/{}/tree/main", repo_id);
+                    let mut request = self.client.get(&root_url);
+
+                    if let Some(token) = &self.hf_token {
+                        request = request.bearer_auth(token);
+                    }
+
+                    let response = request.send().await?;
+                    if !response.status().is_success() {
+                        return Err(WebshartError::DiscoveryFailed(format!(
+                            "Failed to list root directory: {}",
+                            response.status()
+                        )));
+                    }
+
+                    #[derive(Deserialize)]
+                    struct FileInfo {
+                        path: String,
+                        #[serde(rename = "type")]
+                        file_type: String,
+                    }
+
+                    let items: Vec<FileInfo> = response.json().await?;
