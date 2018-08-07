@@ -777,3 +777,42 @@ impl DatasetDiscovery {
                 .discover_shards_from_dataset_info(repo_id, subfolder)
                 .await
             {
+                Ok(shards) => {
+                    println!(
+                        "[webshart] Successfully discovered {} shards from dataset info",
+                        shards.len()
+                    );
+                    all_shards = shards;
+                }
+                Err(_) => {
+                    // Fall back to tree API
+                    println!("[webshart] Falling back to tree API for subfolder discovery");
+                    all_shards = self.discover_shards_in_folder(repo_id, subfolder).await?;
+                }
+            }
+        } else {
+            // No subfolder specified - discover all
+            println!("[webshart] Discovering all shards in {}", repo_id);
+            match self.discover_shards_from_dataset_info(repo_id, None).await {
+                Ok(shards) => {
+                    // Group by directory to show what was found
+                    let mut dirs: HashMap<String, usize> = HashMap::new();
+                    for shard in &shards {
+                        // Extract directory from path
+                        let path_parts: Vec<&str> = shard.tar_path.split('/').collect();
+                        let dir = if let Some(pos) = path_parts
+                            .iter()
+                            .position(|&p| p == "resolve" || p == "main")
+                        {
+                            if pos + 2 < path_parts.len() && path_parts[pos + 2].ends_with(".tar") {
+                                "root"
+                            } else if pos + 2 < path_parts.len() {
+                                path_parts[pos + 2]
+                            } else {
+                                "root"
+                            }
+                        } else {
+                            "unknown"
+                        };
+                        *dirs.entry(dir.to_string()).or_insert(0) += 1;
+                    }
