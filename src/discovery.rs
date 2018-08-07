@@ -737,3 +737,43 @@ impl DatasetDiscovery {
             }
         }
 
+        if shards.is_empty() {
+            return Err(WebshartError::NoShardsFound);
+        }
+
+        // Sort shards by name
+        shards.sort_by(|a, b| a.name.cmp(&b.name));
+
+        // Create dataset - no cached values for local datasets
+        Ok(DiscoveredDataset {
+            name: path.to_string_lossy().to_string(),
+            subfolder: None,
+            cache_dir: None,
+            rate_limit_delay: None,
+            is_remote: false,
+            shards,
+            shard_cache: None,
+            discovery_token: self.hf_token.clone(),
+            cached_total_size: None,
+            cached_total_files: None,
+            metadata_source: self.metadata_resolver.get_source(),
+            runtime: self.runtime.clone(),
+        })
+    }
+
+    /// Discover shards from HuggingFace Hub with pagination support
+    pub async fn discover_huggingface(
+        &self,
+        repo_id: &str,
+        subfolder: Option<&str>,
+    ) -> Result<DiscoveredDataset> {
+        let mut all_shards = Vec::new();
+
+        // Try to use the dataset info API first (no pagination needed)
+        if let Some(folder) = subfolder {
+            // Specific subfolder requested
+            println!("[webshart] Discovering shards in {}/{}", repo_id, folder);
+            match self
+                .discover_shards_from_dataset_info(repo_id, subfolder)
+                .await
+            {
