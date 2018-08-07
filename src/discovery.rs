@@ -856,3 +856,42 @@ impl DatasetDiscovery {
                     }
 
                     let items: Vec<FileInfo> = response.json().await?;
+                    let mut subdirs = Vec::new();
+                    let mut has_root_tars = false;
+
+                    // Check for subdirectories and root tar files
+                    for item in items {
+                        if item.file_type == "directory" {
+                            subdirs.push(item.path);
+                        } else if item.file_type == "file" && item.path.ends_with(".tar") {
+                            has_root_tars = true;
+                        }
+                    }
+
+                    // If we have subdirectories, search each one
+                    if !subdirs.is_empty() {
+                        println!(
+                            "[webshart] Found {} subdirectories to search",
+                            subdirs.len()
+                        );
+
+                        for subdir in subdirs {
+                            println!("[webshart] Searching in {}/{}...", repo_id, subdir);
+                            if let Ok(shards) =
+                                self.discover_shards_in_folder(repo_id, Some(&subdir)).await
+                            {
+                                all_shards.extend(shards);
+                            }
+                        }
+                    }
+
+                    // Also check root if it has tar files
+                    if has_root_tars {
+                        println!("[webshart] Searching in root directory...");
+                        if let Ok(shards) = self.discover_shards_in_folder(repo_id, None).await {
+                            all_shards.extend(shards);
+                        }
+                    }
+                }
+            }
+        }
