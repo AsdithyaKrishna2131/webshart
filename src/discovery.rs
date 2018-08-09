@@ -935,3 +935,42 @@ impl DatasetDiscovery {
         })
     }
 
+    /// Discover shards in a specific folder
+    async fn discover_shards_in_folder(
+        &self,
+        repo_id: &str,
+        subfolder: Option<&str>,
+    ) -> Result<Vec<ShardPair>> {
+        let mut all_files = Vec::new();
+        let mut cursor: Option<String> = None;
+        let mut page_count = 0;
+
+        // Paginate through all files in this folder
+        loop {
+            let api_url = match (subfolder, &cursor) {
+                (Some(folder), Some(cur)) => {
+                    // URL encode the cursor to handle special characters
+                    let encoded_cursor = cur
+                        .replace("+", "%2B")
+                        .replace("/", "%2F")
+                        .replace("=", "%3D");
+                    format!(
+                        "https://huggingface.co/api/datasets/{}/tree/main/{}?cursor={}",
+                        repo_id, folder, encoded_cursor
+                    )
+                }
+                (Some(folder), None) => format!(
+                    "https://huggingface.co/api/datasets/{}/tree/main/{}",
+                    repo_id, folder
+                ),
+                (None, Some(cur)) => {
+                    // URL encode the cursor to handle special characters
+                    let encoded_cursor = cur
+                        .replace("+", "%2B")
+                        .replace("/", "%2F")
+                        .replace("=", "%3D");
+                    format!(
+                        "https://huggingface.co/api/datasets/{}/tree/main?cursor={}",
+                        repo_id, encoded_cursor
+                    )
+                }
