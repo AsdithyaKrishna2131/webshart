@@ -895,3 +895,43 @@ impl DatasetDiscovery {
                 }
             }
         }
+
+        if all_shards.is_empty() {
+            return Err(WebshartError::NoShardsFound);
+        }
+
+        // Sort shards by name
+        all_shards.sort_by(|a, b| a.name.cmp(&b.name));
+
+        println!("[webshart] Total discovered shards: {}", all_shards.len());
+
+        // Fetch dataset size information from HF API
+        let (cached_size, cached_files) = self
+            .fetch_dataset_size(repo_id)
+            .await
+            .unwrap_or((None, None));
+
+        // If we used the dataset info API and got a lot of shards, that's likely the real count
+        let final_cached_files = if !all_shards.is_empty() {
+            // We got actual shard count
+            Some(all_shards.len())
+        } else {
+            cached_files
+        };
+
+        Ok(DiscoveredDataset {
+            name: repo_id.to_string(),
+            subfolder: subfolder.map(|s| s.to_string()),
+            cache_dir: None,
+            rate_limit_delay: None,
+            is_remote: true,
+            shards: all_shards,
+            shard_cache: None,
+            discovery_token: self.hf_token.clone(),
+            cached_total_size: cached_size,
+            cached_total_files: final_cached_files,
+            metadata_source: self.metadata_resolver.get_source(),
+            runtime: self.runtime.clone(),
+        })
+    }
+
