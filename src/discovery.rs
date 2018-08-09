@@ -1053,3 +1053,42 @@ impl DatasetDiscovery {
         for file in all_files {
             if file.file_type != "file" {
                 continue;
+            }
+
+            let file_name = Path::new(&file.path)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            if let Some(captures) = self.shard_pattern.captures(&file_name) {
+                let base_name = captures.get(1).unwrap().as_str();
+                tar_files.insert(base_name.to_string(), file.path);
+            } else if file_name.ends_with(".json") {
+                let base_name = file_name.trim_end_matches(".json");
+                json_files.insert(base_name.to_string(), file.path);
+            }
+        }
+
+        let mut shards = Vec::new();
+        for (base_name, tar_path) in tar_files {
+            let base_url = format!("https://huggingface.co/datasets/{}/resolve/main", repo_id);
+            let full_tar_path = format!("{}/{}", base_url, tar_path);
+
+            // Use resolver to get metadata path
+            let json_path =
+                self.metadata_resolver
+                    .resolve_metadata_path(&full_tar_path, &base_name, true);
+
+            // Try to check if metadata exists
+            if self.metadata_resolver.metadata_exists(&json_path, true) {
+                shards.push(ShardPair {
+                    name: base_name,
+                    tar_path: full_tar_path,
+                    json_path,
+                    metadata: None,
+                });
+            } else {
+                // Fallback to co-located metadata if custom location doesn't have it
+                let default_json_path =
+                    format!("{}/{}", base_url, tar_path.replace(".tar", ".json"));
