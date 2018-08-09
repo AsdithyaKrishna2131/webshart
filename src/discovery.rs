@@ -1092,3 +1092,43 @@ impl DatasetDiscovery {
                 // Fallback to co-located metadata if custom location doesn't have it
                 let default_json_path =
                     format!("{}/{}", base_url, tar_path.replace(".tar", ".json"));
+                if json_files.contains_key(&base_name) {
+                    shards.push(ShardPair {
+                        name: base_name,
+                        tar_path: full_tar_path,
+                        json_path: default_json_path,
+                        metadata: None,
+                    });
+                }
+            }
+        }
+
+        println!(
+            "[webshart] Found {} shards in {}",
+            shards.len(),
+            subfolder.unwrap_or("root")
+        );
+
+        Ok(shards)
+    }
+
+    /// Discover shards using the dataset info API (avoids pagination)
+    async fn discover_shards_from_dataset_info(
+        &self,
+        repo_id: &str,
+        subfolder: Option<&str>,
+    ) -> Result<Vec<ShardPair>> {
+        let api_url = format!("https://huggingface.co/api/datasets/{}", repo_id);
+
+        let mut request = self.client.get(&api_url);
+        if let Some(token) = &self.hf_token {
+            request = request.bearer_auth(token);
+        }
+
+        let response = request.send().await?;
+        if !response.status().is_success() {
+            return Err(WebshartError::DiscoveryFailed(format!(
+                "Failed to get dataset info: {}",
+                response.status()
+            )));
+        }
