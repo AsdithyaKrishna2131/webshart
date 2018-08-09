@@ -974,3 +974,42 @@ impl DatasetDiscovery {
                         repo_id, encoded_cursor
                     )
                 }
+                (None, None) => {
+                    format!("https://huggingface.co/api/datasets/{}/tree/main", repo_id)
+                }
+            };
+
+            let mut request = self.client.get(&api_url);
+
+            if let Some(token) = &self.hf_token {
+                request = request.bearer_auth(token);
+            }
+
+            let response = request.send().await?;
+
+            if !response.status().is_success() {
+                return Err(WebshartError::DiscoveryFailed(format!(
+                    "Failed to list files: {}",
+                    response.status()
+                )));
+            }
+
+            // Check for pagination headers BEFORE consuming the response body
+            let headers = response.headers();
+
+            let has_more = headers
+                .get("x-has-more")
+                .and_then(|v| v.to_str().ok())
+                .map(|v| v == "true")
+                .unwrap_or(false);
+
+            let next_cursor = headers
+                .get("x-cursor")
+                .and_then(|v| v.to_str().ok())
+                .map(|s| s.to_string());
+
+            #[derive(Deserialize)]
+            struct FileInfo {
+                path: String,
+                #[serde(rename = "type")]
+                file_type: String,
