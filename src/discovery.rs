@@ -1013,3 +1013,43 @@ impl DatasetDiscovery {
                 path: String,
                 #[serde(rename = "type")]
                 file_type: String,
+            }
+
+            let files: Vec<FileInfo> = response.json().await?;
+            let files_in_page = files.len();
+            all_files.extend(files);
+
+            page_count += 1;
+
+            // Debug pagination info
+            if has_more && next_cursor.is_some() {
+                println!(
+                    "[webshart] Page {}: fetched {} files, continuing...",
+                    page_count, files_in_page
+                );
+            } else {
+                println!(
+                    "[webshart] Page {}: fetched {} files (total: {})",
+                    page_count,
+                    files_in_page,
+                    all_files.len()
+                );
+            }
+
+            if !has_more || next_cursor.is_none() {
+                if page_count > 1 {
+                    println!("[webshart] Pagination complete after {} pages", page_count);
+                }
+                break;
+            }
+
+            cursor = next_cursor;
+        }
+
+        // Process files to find tar/json pairs
+        let mut tar_files = HashMap::new();
+        let mut json_files = HashMap::new();
+
+        for file in all_files {
+            if file.file_type != "file" {
+                continue;
