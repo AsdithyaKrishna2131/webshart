@@ -1132,3 +1132,42 @@ impl DatasetDiscovery {
                 response.status()
             )));
         }
+
+        let json: Value = response.json().await?;
+        let siblings = json["siblings"].as_array().ok_or_else(|| {
+            WebshartError::DiscoveryFailed("No siblings array in dataset info".to_string())
+        })?;
+
+        // Process siblings to find tar files
+        let mut tar_files = HashMap::new();
+
+        for sibling in siblings {
+            let path = sibling["rfilename"].as_str().ok_or_else(|| {
+                WebshartError::DiscoveryFailed("Invalid sibling entry".to_string())
+            })?;
+
+            // Filter by subfolder if specified
+            let in_target_folder = if let Some(folder) = subfolder {
+                path.starts_with(&format!("{}/", folder))
+            } else {
+                path.ends_with(".tar") // Only look for tar files if no subfolder
+            };
+
+            if !in_target_folder {
+                continue;
+            }
+
+            let file_name = Path::new(path)
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
+
+            if let Some(captures) = self.shard_pattern.captures(&file_name) {
+                let base_name = captures.get(1).unwrap().as_str();
+                tar_files.insert(base_name.to_string(), path.to_string());
+            }
+        }
+
+        // Build shards with metadata resolver
+        let mut shards = Vec::new();
