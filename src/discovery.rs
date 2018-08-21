@@ -1171,3 +1171,43 @@ impl DatasetDiscovery {
 
         // Build shards with metadata resolver
         let mut shards = Vec::new();
+        let base_url = format!("https://huggingface.co/datasets/{}/resolve/main", repo_id);
+
+        for (base_name, tar_path) in tar_files {
+            let full_tar_path = format!("{}/{}", base_url, tar_path);
+
+            // Use resolver to get metadata path
+            let json_path =
+                self.metadata_resolver
+                    .resolve_metadata_path(&full_tar_path, &base_name, true);
+
+            shards.push(ShardPair {
+                name: base_name,
+                tar_path: full_tar_path,
+                json_path,
+                metadata: None,
+            });
+        }
+
+        println!("[webshart] Matched {} shard pairs", shards.len());
+        Ok(shards)
+    }
+
+    /// Fetch dataset size information from HuggingFace API
+    async fn fetch_dataset_size(&self, repo_id: &str) -> Result<(Option<u64>, Option<usize>)> {
+        // Try the dataset info endpoint first
+        let api_url = format!("https://huggingface.co/api/datasets/{}", repo_id);
+
+        let mut request = self.client.get(&api_url);
+
+        if let Some(token) = &self.hf_token {
+            request = request.bearer_auth(token);
+        }
+
+        let response = request.send().await?;
+
+        if !response.status().is_success() {
+            println!(
+                "[webshart] Could not fetch dataset info: {}",
+                response.status()
+            );
