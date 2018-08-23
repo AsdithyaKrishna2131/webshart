@@ -1211,3 +1211,42 @@ impl DatasetDiscovery {
                 "[webshart] Could not fetch dataset info: {}",
                 response.status()
             );
+            return Ok((None, None));
+        }
+
+        let json: Value = response.json().await?;
+
+        // Try different places where size info might be stored
+        // First check top-level size field
+        if let Some(size) = json["size"].as_u64() {
+            return Ok((Some(size), None));
+        }
+
+        // Check siblings for total size calculation
+        if let Some(siblings) = json["siblings"].as_array() {
+            let mut total_size = 0u64;
+            let mut file_count = 0usize;
+
+            for sibling in siblings {
+                if let Some(size) = sibling["size"].as_u64() {
+                    // Only count .tar files
+                    if let Some(filename) = sibling["rfilename"].as_str() {
+                        if filename.ends_with(".tar") {
+                            total_size += size;
+                            file_count += 1;
+                        }
+                    }
+                }
+            }
+
+            if total_size > 0 {
+                return Ok((Some(total_size), Some(file_count)));
+            }
+        }
+
+        Ok((None, None))
+    }
+
+    pub async fn load_local_metadata(&self, path: &str) -> Result<ShardMetadata> {
+        self.metadata_resolver.load_metadata(path, false).await
+    }
