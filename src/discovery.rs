@@ -1408,3 +1408,42 @@ impl PyDiscoveredDataset {
                 } else {
                     Err(pyo3::exceptions::PyValueError::new_err(
                         "Failed to load shard metadata",
+                    ))
+                }
+            } else {
+                Err(pyo3::exceptions::PyIndexError::new_err(format!(
+                    "Shard index {} out of range",
+                    shard_index
+                )))
+            }
+        })
+    }
+
+    /// Inspect shard indexes to determine how captions are represented.
+    #[pyo3(signature = (max_shards=None))]
+    fn probe_caption_layout(
+        &mut self,
+        py: Python,
+        max_shards: Option<usize>,
+    ) -> PyResult<Py<PyDict>> {
+        if max_shards == Some(0) {
+            return Err(pyo3::exceptions::PyValueError::new_err(
+                "max_shards must be greater than zero",
+            ));
+        }
+
+        let total_shards = self.inner.num_shards();
+        let shards_scanned = max_shards.unwrap_or(total_shards).min(total_shards);
+        let mut samples = 0;
+        let mut captioned_samples = 0;
+        let mut embedded_samples = 0;
+        let mut json_sidecar_samples = 0;
+        let mut txt_sidecar_samples = 0;
+
+        for shard_index in 0..shards_scanned {
+            self.inner.ensure_shard_metadata(shard_index)?;
+            if let Some(metadata) = self.inner.shards[shard_index].metadata.as_ref() {
+                let counts = metadata.caption_layout_counts();
+                samples += counts.samples;
+                captioned_samples += counts.captioned_samples;
+                embedded_samples += counts.embedded_samples;
