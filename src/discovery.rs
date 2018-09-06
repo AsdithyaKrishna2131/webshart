@@ -1250,3 +1250,43 @@ impl DatasetDiscovery {
     pub async fn load_local_metadata(&self, path: &str) -> Result<ShardMetadata> {
         self.metadata_resolver.load_metadata(path, false).await
     }
+
+    pub async fn load_remote_metadata(&self, url: &str) -> Result<ShardMetadata> {
+        match self.metadata_resolver.load_metadata(url, true).await {
+            Ok(metadata) => Ok(metadata),
+            Err(e) => {
+                // Check if it's a 429 error and convert to RateLimited
+                if let WebshartError::Http(ref err) = e {
+                    if let Some(status) = err.status() {
+                        if status == reqwest::StatusCode::TOO_MANY_REQUESTS {
+                            return Err(WebshartError::RateLimited);
+                        }
+                    }
+                }
+                Err(e)
+            }
+        }
+    }
+}
+
+/// Python wrapper for DatasetDiscovery
+#[pyclass(name = "DatasetDiscovery")]
+pub struct PyDatasetDiscovery {
+    inner: DatasetDiscovery,
+}
+
+#[pymethods]
+impl PyDatasetDiscovery {
+    #[new]
+    #[pyo3(signature = (hf_token=None, metadata_source=None))]
+    fn new(hf_token: Option<String>, metadata_source: Option<String>) -> Self {
+        let mut discovery = DatasetDiscovery::new();
+        if let Some(token) = hf_token {
+            discovery = discovery.with_hf_token(token);
+        }
+        if let Some(metadata) = metadata_source {
+            discovery = discovery.with_metadata_source(Some(metadata));
+        }
+        Self { inner: discovery }
+    }
+
