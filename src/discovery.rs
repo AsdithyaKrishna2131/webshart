@@ -1487,3 +1487,42 @@ impl PyDiscoveredDataset {
                 "File index {} out of range",
                 file_index
             ))),
+        }
+    }
+
+    fn open_shard(&mut self, shard_index: usize) -> PyResult<PyShardReader> {
+        let reader = self.inner.open_shard(shard_index)?;
+        Ok(PyShardReader { inner: reader })
+    }
+
+    #[pyo3(signature = (location, cache_limit_gb=25.0, parallel_downloads=4))]
+    fn enable_shard_cache(
+        &mut self,
+        location: &str,
+        cache_limit_gb: f64,
+        parallel_downloads: usize,
+    ) -> PyResult<()> {
+        let runtime = Runtime::new()?;
+        runtime.block_on(async {
+            self.inner
+                .enable_shard_cache(PathBuf::from(location), cache_limit_gb, parallel_downloads)
+                .await
+        })?;
+        Ok(())
+    }
+
+    #[pyo3(signature = (location, init_shard_count=4))]
+    fn enable_metadata_cache(
+        &mut self,
+        location: &str,
+        init_shard_count: Option<usize>,
+    ) -> PyResult<()> {
+        let init_count = init_shard_count.unwrap_or(4);
+        self.inner.enable_metadata_cache(location, init_count)?;
+        Ok(())
+    }
+
+    fn clear_metadata_cache(&self) -> PyResult<()> {
+        self.inner.clear_cache()?;
+        Ok(())
+    }
