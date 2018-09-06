@@ -1329,3 +1329,42 @@ impl PyDiscoveredDataset {
 
     #[getter]
     fn num_shards(&self) -> usize {
+        self.inner.num_shards()
+    }
+
+    #[getter]
+    fn total_files(&mut self) -> PyResult<usize> {
+        Ok(self.inner.total_files()?)
+    }
+
+    #[getter]
+    fn total_size(&mut self) -> PyResult<u64> {
+        Ok(self.inner.total_size()?)
+    }
+
+    fn quick_stats(&self) -> (Option<u64>, Option<usize>) {
+        self.inner.quick_stats()
+    }
+
+    fn get_shard_info(&mut self, index: usize) -> PyResult<Py<PyDict>> {
+        // Ensure metadata is loaded for this shard
+        self.inner.ensure_shard_metadata(index)?;
+
+        Python::attach(|py| {
+            if let Some(shard) = self.inner.shards.get(index) {
+                let dict = PyDict::new(py);
+                dict.set_item("name", &shard.name)?;
+                dict.set_item("tar_path", &shard.tar_path)?;
+                dict.set_item("json_path", &shard.json_path)?;
+
+                if let Some(metadata) = &shard.metadata {
+                    dict.set_item("num_files", metadata.num_files())?;
+                    dict.set_item("num_samples", metadata.num_samples())?;
+                    dict.set_item("size", metadata.filesize)?;
+                }
+
+                Ok(dict.into())
+            } else {
+                Err(pyo3::exceptions::PyIndexError::new_err(format!(
+                    "Shard index {} out of range",
+                    index
