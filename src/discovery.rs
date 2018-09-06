@@ -1290,3 +1290,42 @@ impl PyDatasetDiscovery {
         Self { inner: discovery }
     }
 
+    fn discover_local(&self, path: &str) -> PyResult<PyDiscoveredDataset> {
+        let dataset = self.inner.discover_local(Path::new(path))?;
+        Ok(PyDiscoveredDataset { inner: dataset })
+    }
+
+    #[pyo3(signature = (repo_id, subfolder=None))]
+    fn discover_huggingface(
+        &self,
+        repo_id: &str,
+        subfolder: Option<&str>,
+    ) -> PyResult<PyDiscoveredDataset> {
+        let dataset = self
+            .inner
+            .runtime
+            .block_on(self.inner.discover_huggingface(repo_id, subfolder))?;
+        Ok(PyDiscoveredDataset { inner: dataset })
+    }
+}
+
+/// Python wrapper for DiscoveredDataset
+#[pyclass(name = "DiscoveredDataset")]
+pub struct PyDiscoveredDataset {
+    pub inner: DiscoveredDataset,
+}
+
+#[pymethods]
+impl PyDiscoveredDataset {
+    #[getter]
+    fn name(&self) -> &str {
+        &self.inner.name
+    }
+
+    #[getter]
+    fn is_remote(&self) -> bool {
+        self.inner.is_remote
+    }
+
+    #[getter]
+    fn num_shards(&self) -> usize {
