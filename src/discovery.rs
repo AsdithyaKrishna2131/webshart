@@ -1368,3 +1368,43 @@ impl PyDiscoveredDataset {
                 Err(pyo3::exceptions::PyIndexError::new_err(format!(
                     "Shard index {} out of range",
                     index
+                )))
+            }
+        })
+    }
+
+    fn list_files_in_shard(&mut self, shard_index: usize) -> PyResult<Py<PyList>> {
+        // Ensure metadata is loaded for this shard
+        self.inner.ensure_shard_metadata(shard_index)?;
+
+        Python::attach(|py| {
+            if let Some(shard) = self.inner.shards.get(shard_index) {
+                if let Some(metadata) = &shard.metadata {
+                    let filenames = metadata.filenames();
+                    Ok(PyList::new(py, filenames)?.unbind())
+                } else {
+                    Err(pyo3::exceptions::PyValueError::new_err(
+                        "Failed to load shard metadata",
+                    ))
+                }
+            } else {
+                Err(pyo3::exceptions::PyIndexError::new_err(format!(
+                    "Shard index {} out of range",
+                    shard_index
+                )))
+            }
+        })
+    }
+
+    fn list_samples_in_shard(&mut self, shard_index: usize) -> PyResult<Py<PyList>> {
+        // Ensure metadata is loaded for this shard
+        self.inner.ensure_shard_metadata(shard_index)?;
+
+        Python::attach(|py| {
+            if let Some(shard) = self.inner.shards.get(shard_index) {
+                if let Some(metadata) = &shard.metadata {
+                    let filenames = metadata.sample_filenames();
+                    Ok(PyList::new(py, filenames)?.unbind())
+                } else {
+                    Err(pyo3::exceptions::PyValueError::new_err(
+                        "Failed to load shard metadata",
