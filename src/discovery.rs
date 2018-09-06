@@ -1447,3 +1447,43 @@ impl PyDiscoveredDataset {
                 samples += counts.samples;
                 captioned_samples += counts.captioned_samples;
                 embedded_samples += counts.embedded_samples;
+                json_sidecar_samples += counts.json_sidecar_samples;
+                txt_sidecar_samples += counts.txt_sidecar_samples;
+            }
+        }
+
+        let source_count = usize::from(embedded_samples > 0)
+            + usize::from(json_sidecar_samples > 0)
+            + usize::from(txt_sidecar_samples > 0);
+        let layout = match source_count {
+            0 => "none",
+            1 if embedded_samples > 0 => "embedded",
+            1 if json_sidecar_samples > 0 => "json_sidecar",
+            1 => "txt_sidecar",
+            _ => "mixed",
+        };
+
+        let result = PyDict::new(py);
+        result.set_item("layout", layout)?;
+        result.set_item("shards_scanned", shards_scanned)?;
+        result.set_item("total_shards", total_shards)?;
+        result.set_item("complete", shards_scanned == total_shards)?;
+        result.set_item("samples", samples)?;
+        result.set_item("captioned_samples", captioned_samples)?;
+        result.set_item(
+            "uncaptioned_samples",
+            samples.saturating_sub(captioned_samples),
+        )?;
+        result.set_item("embedded_samples", embedded_samples)?;
+        result.set_item("json_sidecar_samples", json_sidecar_samples)?;
+        result.set_item("txt_sidecar_samples", txt_sidecar_samples)?;
+        Ok(result.unbind())
+    }
+
+    fn find_file_location(&mut self, file_index: usize) -> PyResult<(usize, usize)> {
+        match self.inner.find_shard_for_file(file_index)? {
+            Some(location) => Ok(location),
+            None => Err(pyo3::exceptions::PyIndexError::new_err(format!(
+                "File index {} out of range",
+                file_index
+            ))),
