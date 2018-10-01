@@ -1605,3 +1605,43 @@ impl PyDiscoveredDataset {
             if let Some(files) = cached_files {
                 dict.set_item("total_files", files)?;
                 dict.set_item(
+                    "average_files_per_shard",
+                    files as f64 / self.inner.num_shards() as f64,
+                )?;
+            }
+            // Add a flag indicating if these are cached or computed values
+            dict.set_item(
+                "from_cache",
+                cached_size.is_some() || cached_files.is_some(),
+            )?;
+            let shard_details = PyList::empty(py);
+            for (i, shard) in self.inner.shards.iter().enumerate() {
+                let shard_dict = PyDict::new(py);
+                shard_dict.set_item("index", i)?;
+                shard_dict.set_item("name", &shard.name)?;
+                if let Some(metadata) = &shard.metadata {
+                    shard_dict.set_item("num_files", metadata.num_files())?;
+                    shard_dict.set_item("size", metadata.filesize)?;
+                    shard_dict.set_item("metadata_loaded", true)?;
+                } else {
+                    shard_dict.set_item("metadata_loaded", false)?;
+                }
+                shard_details.append(shard_dict)?;
+            }
+            dict.set_item("shard_details", shard_details)?;
+
+            Ok(dict.into())
+        })
+    }
+
+    fn get_detailed_stats(&mut self) -> PyResult<Py<PyDict>> {
+        self.inner.ensure_all_metadata_loaded()?;
+
+        Python::attach(|py| {
+            let dict = PyDict::new(py);
+            let mut total_files = 0usize;
+            let mut total_size = 0u64;
+            let mut min_files = usize::MAX;
+            let mut max_files = 0usize;
+            let shard_details = PyList::empty(py);
+            for (i, shard) in self.inner.shards.iter().enumerate() {
