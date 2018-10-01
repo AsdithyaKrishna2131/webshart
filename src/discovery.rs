@@ -1645,3 +1645,42 @@ impl PyDiscoveredDataset {
             let mut max_files = 0usize;
             let shard_details = PyList::empty(py);
             for (i, shard) in self.inner.shards.iter().enumerate() {
+                if let Some(metadata) = &shard.metadata {
+                    let num_files = metadata.num_files();
+                    let size = metadata.filesize;
+                    total_files += num_files;
+                    total_size += size;
+                    min_files = min_files.min(num_files);
+                    max_files = max_files.max(num_files);
+                    // Create detailed shard info
+                    let shard_dict = PyDict::new(py);
+                    shard_dict.set_item("index", i)?;
+                    shard_dict.set_item("name", &shard.name)?;
+                    shard_dict.set_item("num_files", num_files)?;
+                    shard_dict.set_item("size", size)?;
+                    shard_dict.set_item("size_mb", size as f64 / (1024.0_f64).powi(2))?;
+                    shard_details.append(shard_dict)?;
+                }
+            }
+            let num_shards = self.inner.num_shards();
+            let avg_files = if num_shards > 0 {
+                total_files as f64 / num_shards as f64
+            } else {
+                0.0
+            };
+            let avg_size = if num_shards > 0 {
+                total_size as f64 / num_shards as f64
+            } else {
+                0.0
+            };
+            // Set all statistics
+            dict.set_item("total_shards", num_shards)?;
+            dict.set_item("total_files", total_files)?;
+            dict.set_item("total_size", total_size)?;
+            dict.set_item("total_size_gb", total_size as f64 / (1024.0_f64).powi(3))?;
+            dict.set_item("average_files_per_shard", avg_files)?;
+            dict.set_item("average_size_per_shard", avg_size)?;
+            dict.set_item("average_size_per_shard_mb", avg_size / (1024.0_f64).powi(2))?;
+            dict.set_item(
+                "min_files_in_shard",
+                if min_files == usize::MAX {
