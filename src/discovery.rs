@@ -1526,3 +1526,43 @@ impl PyDiscoveredDataset {
         self.inner.clear_cache()?;
         Ok(())
     }
+
+    fn get_cache_stats(&self) -> PyResult<Py<PyDict>> {
+        let (count, size) = self.inner.cache_stats()?;
+
+        Python::attach(|py| {
+            let dict = PyDict::new(py);
+            dict.set_item("cached_shards", count)?;
+            dict.set_item("cache_size_bytes", size)?;
+            dict.set_item("cache_size_mb", size as f64 / (1024.0 * 1024.0))?;
+            dict.set_item("cache_enabled", self.inner.cache_dir.is_some())?;
+            if let Some(ref cache_dir) = self.inner.cache_dir {
+                dict.set_item("cache_location", cache_dir.to_string_lossy().to_string())?;
+            }
+            Ok(dict.into())
+        })
+    }
+
+    fn get_shard_file_count(&mut self, shard_index: usize) -> PyResult<usize> {
+        if shard_index >= self.inner.shards.len() {
+            return Err(pyo3::exceptions::PyIndexError::new_err(format!(
+                "Shard index {} out of range. Dataset has {} shards.",
+                shard_index,
+                self.inner.shards.len()
+            )));
+        }
+        self.inner.ensure_shard_metadata(shard_index)?;
+        if let Some(shard) = self.inner.shards.get(shard_index) {
+            if let Some(metadata) = &shard.metadata {
+                Ok(metadata.num_files())
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err(
+                    "Failed to load shard metadata",
+                ))
+            }
+        } else {
+            Err(pyo3::exceptions::PyIndexError::new_err(format!(
+                "Shard index {} out of range",
+                shard_index
+            )))
+        }
