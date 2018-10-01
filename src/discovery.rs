@@ -1566,3 +1566,42 @@ impl PyDiscoveredDataset {
                 shard_index
             )))
         }
+    }
+
+    fn get_shard_sample_count(&mut self, shard_index: usize) -> PyResult<usize> {
+        if shard_index >= self.inner.shards.len() {
+            return Err(pyo3::exceptions::PyIndexError::new_err(format!(
+                "Shard index {} out of range. Dataset has {} shards.",
+                shard_index,
+                self.inner.shards.len()
+            )));
+        }
+        self.inner.ensure_shard_metadata(shard_index)?;
+        if let Some(shard) = self.inner.shards.get(shard_index) {
+            if let Some(metadata) = &shard.metadata {
+                Ok(metadata.num_samples())
+            } else {
+                Err(pyo3::exceptions::PyValueError::new_err(
+                    "Failed to load shard metadata",
+                ))
+            }
+        } else {
+            Err(pyo3::exceptions::PyIndexError::new_err(format!(
+                "Shard index {} out of range",
+                shard_index
+            )))
+        }
+    }
+
+    fn get_stats(&mut self) -> PyResult<Py<PyDict>> {
+        Python::attach(|py| {
+            let dict = PyDict::new(py);
+            dict.set_item("total_shards", self.inner.num_shards())?;
+            let (cached_size, cached_files) = self.inner.quick_stats();
+            if let Some(size) = cached_size {
+                dict.set_item("total_size", size)?;
+                dict.set_item("total_size_gb", size as f64 / (1024.0_f64).powi(3))?;
+            }
+            if let Some(files) = cached_files {
+                dict.set_item("total_files", files)?;
+                dict.set_item(
