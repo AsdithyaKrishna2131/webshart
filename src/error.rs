@@ -18,3 +18,8 @@ pub enum WebshartError {
 
     #[error("Metadata not found: {0}")]
     MetadataNotFound(String),
+
+    #[error("Invalid shard format: {0}")]
+    InvalidShardFormat(String),
+
+    #[error("Discovery failed: {0}")]
