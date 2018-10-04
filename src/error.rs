@@ -27,3 +27,7 @@ pub enum WebshartError {
 
     #[error("No shards found in dataset")]
     NoShardsFound,
+
+    #[error("Rate limit exceeded")]
+    RateLimited,
+
