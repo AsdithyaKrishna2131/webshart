@@ -23,3 +23,7 @@ pub enum WebshartError {
     InvalidShardFormat(String),
 
     #[error("Discovery failed: {0}")]
+    DiscoveryFailed(String),
+
+    #[error("No shards found in dataset")]
+    NoShardsFound,
