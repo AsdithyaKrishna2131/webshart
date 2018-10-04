@@ -14,3 +14,7 @@ pub enum WebshartError {
     Http(#[from] reqwest::Error),
 
     #[error("Invalid URL: {0}")]
+    InvalidUrl(String),
+
+    #[error("Metadata not found: {0}")]
+    MetadataNotFound(String),
