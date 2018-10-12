@@ -114,3 +114,28 @@ impl MetadataExtractor {
 
     pub fn with_image_geometry(mut self, include: bool) -> Self {
         self.include_image_geometry = include;
+        self
+    }
+
+    pub fn extract_metadata(
+        &self,
+        source: &str,
+        destination: &str,
+        checkpoint_dir: Option<&str>,
+        max_workers: usize,
+        shard_range: Option<(usize, usize)>, // NEW: Add range parameter
+    ) -> Result<()> {
+        self.runtime.block_on(async {
+            // Set up Ctrl+C handler
+            let ctrl_c = tokio::signal::ctrl_c();
+
+            // Create the main extraction future
+            let extraction = async {
+                // Discover unindexed shards
+                let mut shards = self
+                    .discover_unindexed_shards(source, checkpoint_dir)
+                    .await?;
+
+                // Apply range filter if provided
+                if let Some((start, end)) = shard_range {
+                    println!("[webshart] Filtering shards to range [{}, {})", start, end);
