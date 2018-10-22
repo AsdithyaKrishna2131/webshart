@@ -139,3 +139,28 @@ impl MetadataExtractor {
                 // Apply range filter if provided
                 if let Some((start, end)) = shard_range {
                     println!("[webshart] Filtering shards to range [{}, {})", start, end);
+
+                    // Sort shards by name first to ensure consistent ordering
+                    shards.sort_by(|a, b| a.name.cmp(&b.name));
+
+                    // Filter to the specified range
+                    let total_shards = shards.len();
+                    shards = shards
+                        .into_iter()
+                        .enumerate()
+                        .filter_map(|(idx, shard)| {
+                            if idx >= start && idx < end {
+                                Some(shard)
+                            } else {
+                                None
+                            }
+                        })
+                        .collect();
+
+                    println!(
+                        "[webshart] Processing {} shards out of {} total (indices {}-{})",
+                        shards.len(),
+                        total_shards,
+                        start,
+                        std::cmp::min(end, total_shards) - 1
+                    );
