@@ -286,3 +286,28 @@ impl MetadataExtractor {
             let semaphore = Arc::new(tokio::sync::Semaphore::new(max_workers));
             let futures = shards.into_iter().map(|shard| {
                 let sem = semaphore.clone();
+                let checkpoint = checkpoints.get(&shard.name).cloned();
+                let token = self.hf_token.clone();
+                let dest = destination.to_string();
+                let checkpoint_dir = checkpoint_dir.map(|s| s.to_string());
+                let extractor = self.clone();
+                let mp = multi_progress.clone();
+
+                async move {
+                    let _permit = sem.acquire().await.unwrap();
+                    let result = extractor
+                        .process_shard(
+                            shard.clone(),
+                            checkpoint,
+                            &dest,
+                            checkpoint_dir.as_deref(),
+                            token,
+                            mp,
+                        )
+                        .await;
+                    result
+                }
+            });
+
+            let results = join_all(futures).await;
+
