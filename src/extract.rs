@@ -262,3 +262,27 @@ impl MetadataExtractor {
                 .discover_unindexed_shards(source, checkpoint_dir)
                 .await?;
 
+            if shards.is_empty() {
+                println!("[webshart] No unindexed shards found");
+                return Ok(());
+            }
+
+            println!(
+                "[webshart] Found {} unindexed shards to process",
+                shards.len()
+            );
+
+            // Load checkpoints
+            let checkpoints = if let Some(dir) = checkpoint_dir {
+                self.load_checkpoints(dir)?
+            } else {
+                HashMap::new()
+            };
+
+            // Create multi-progress for managing multiple progress bars
+            let multi_progress = Arc::new(MultiProgress::new());
+
+            // Process shards in parallel
+            let semaphore = Arc::new(tokio::sync::Semaphore::new(max_workers));
+            let futures = shards.into_iter().map(|shard| {
+                let sem = semaphore.clone();
