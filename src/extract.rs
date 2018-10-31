@@ -237,3 +237,28 @@ impl MetadataExtractor {
                 println!("[webshart] Successfully extracted metadata for all shards");
                 Ok(())
             };
+
+            // Run with interrupt handling
+            tokio::select! {
+                result = extraction => result,
+                _ = ctrl_c => {
+                    println!("\n[webshart] Received interrupt signal, stopping...");
+                    Err(WebshartError::DiscoveryFailed("Cancelled by user".to_string()))
+                }
+            }
+        })
+    }
+
+    pub fn extract_metadata_internal(
+        &self,
+        source: &str,
+        destination: &str,
+        checkpoint_dir: Option<&str>,
+        max_workers: usize,
+    ) -> Result<()> {
+        self.runtime.block_on(async {
+            // Discover unindexed shards
+            let shards = self
+                .discover_unindexed_shards(source, checkpoint_dir)
+                .await?;
+
