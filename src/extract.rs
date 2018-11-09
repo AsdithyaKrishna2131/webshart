@@ -360,3 +360,28 @@ impl MetadataExtractor {
         // Filter based on checkpoints and existing JSON files
         let mut filtered_shards = Vec::new();
         for shard in shards {
+            // let base_name = shard.name.trim_end_matches(".tar");
+            let json_exists = if shard.is_remote {
+                false // Can't easily check remote JSON existence
+            } else {
+                Path::new(&shard.path).with_extension("json").exists()
+            };
+
+            if let Some(checkpoint) = checkpoints.get(&shard.name) {
+                match &checkpoint.status {
+                    CheckpointStatus::Complete => {
+                        println!(
+                            "[webshart] Skipping {} (marked complete in checkpoint)",
+                            shard.name
+                        );
+                        continue;
+                    }
+                    CheckpointStatus::Failed(err) => {
+                        println!(
+                            "[webshart] Retrying {} (previously failed: {})",
+                            shard.name, err
+                        );
+                    }
+                    CheckpointStatus::InProgress => {
+                        println!(
+                            "[webshart] Resuming {} from offset {}",
