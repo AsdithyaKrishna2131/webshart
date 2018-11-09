@@ -336,3 +336,27 @@ impl MetadataExtractor {
     }
 
     async fn discover_unindexed_shards(
+        &self,
+        source: &str,
+        checkpoint_dir: Option<&str>,
+    ) -> Result<Vec<UnindexedShard>> {
+        let mut shards = Vec::new();
+
+        // Load existing checkpoints to filter out completed shards
+        let checkpoints = if let Some(dir) = checkpoint_dir {
+            self.load_checkpoints(dir)?
+        } else {
+            HashMap::new()
+        };
+
+        if Path::new(source).exists() {
+            // Local discovery
+            self.discover_local_unindexed(Path::new(source), &mut shards)?;
+        } else {
+            // HuggingFace discovery
+            shards = self.discover_hf_unindexed(source).await?;
+        }
+
+        // Filter based on checkpoints and existing JSON files
+        let mut filtered_shards = Vec::new();
+        for shard in shards {
