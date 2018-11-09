@@ -311,3 +311,28 @@ impl MetadataExtractor {
 
             let results = join_all(futures).await;
 
+            // Check for failures and stop immediately
+            let mut failed = 0;
+            let mut errors = Vec::new();
+            for (i, result) in results.iter().enumerate() {
+                if let Err(e) = result {
+                    eprintln!("[webshart] Failed to process shard {}: {}", i, e);
+                    errors.push(e.to_string());
+                    failed += 1;
+                }
+            }
+
+            if failed > 0 {
+                return Err(WebshartError::DiscoveryFailed(format!(
+                    "Failed to process {} shards. First error: {}",
+                    failed,
+                    errors.first().unwrap_or(&"Unknown error".to_string())
+                )));
+            }
+
+            println!("[webshart] Successfully extracted metadata for all shards");
+            Ok(())
+        })
+    }
+
+    async fn discover_unindexed_shards(
