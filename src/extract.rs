@@ -385,3 +385,27 @@ impl MetadataExtractor {
                     CheckpointStatus::InProgress => {
                         println!(
                             "[webshart] Resuming {} from offset {}",
+                            shard.name, checkpoint.offset
+                        );
+                    }
+                    CheckpointStatus::Pending => {
+                        println!("[webshart] Processing {} (pending)", shard.name);
+                    }
+                }
+            } else if json_exists {
+                // Has JSON but no checkpoint - might be from a previous incomplete run
+                println!(
+                    "[webshart] Found {} with existing JSON but no checkpoint, will verify",
+                    shard.name
+                );
+            } else {
+                println!(
+                    "[webshart] Processing {} (no JSON, no checkpoint)",
+                    shard.name
+                );
+            }
+
+            filtered_shards.push(shard);
+        }
+
+        // Sort by name for consistent ordering
