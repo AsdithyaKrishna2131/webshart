@@ -434,3 +434,28 @@ impl MetadataExtractor {
                     if let Some(_captures) = self.shard_pattern.captures(&file_name_str) {
                         // Found a tar file - add it regardless of JSON existence
                         shards.push(UnindexedShard {
+                            name: file_name_str.to_string(),
+                            path: entry_path.to_string_lossy().to_string(),
+                            size: entry.metadata()?.len(),
+                            is_remote: false,
+                        });
+                    }
+                }
+            }
+        }
+        Ok(())
+    }
+
+    async fn discover_hf_unindexed(&self, repo_id: &str) -> Result<Vec<UnindexedShard>> {
+        // Use HF dataset info API
+        let api_url = format!("https://huggingface.co/api/datasets/{}", repo_id);
+        let mut request = self.client.get(&api_url);
+
+        if let Some(token) = &self.hf_token {
+            request = request.bearer_auth(token);
+        }
+
+        let response = request.send().await?;
+        if !response.status().is_success() {
+            return Err(WebshartError::DiscoveryFailed(format!(
+                "Failed to get dataset info: {}",
