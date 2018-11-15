@@ -409,3 +409,28 @@ impl MetadataExtractor {
         }
 
         // Sort by name for consistent ordering
+        filtered_shards.sort_by(|a, b| a.name.cmp(&b.name));
+
+        Ok(filtered_shards)
+    }
+
+    fn discover_local_unindexed(
+        &self,
+        path: &Path,
+        shards: &mut Vec<UnindexedShard>,
+    ) -> Result<()> {
+        // Find ALL tar files, not just ones without JSON
+        if path.is_dir() {
+            for entry in std::fs::read_dir(path)? {
+                let entry = entry?;
+                let entry_path = entry.path();
+
+                if entry_path.is_dir() {
+                    // Recurse into subdirectories
+                    self.discover_local_unindexed(&entry_path, shards)?;
+                } else if let Some(file_name) = entry_path.file_name() {
+                    let file_name_str = file_name.to_string_lossy();
+
+                    if let Some(_captures) = self.shard_pattern.captures(&file_name_str) {
+                        // Found a tar file - add it regardless of JSON existence
+                        shards.push(UnindexedShard {
