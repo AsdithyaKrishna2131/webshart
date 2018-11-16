@@ -459,3 +459,27 @@ impl MetadataExtractor {
         if !response.status().is_success() {
             return Err(WebshartError::DiscoveryFailed(format!(
                 "Failed to get dataset info: {}",
+                response.status()
+            )));
+        }
+
+        #[derive(Deserialize)]
+        struct Sibling {
+            rfilename: String,
+            size: Option<u64>,
+        }
+
+        #[derive(Deserialize)]
+        struct DatasetInfo {
+            siblings: Vec<Sibling>,
+        }
+
+        let info: DatasetInfo = response.json().await?;
+
+        // Find ALL tar files
+        let mut shards = Vec::new();
+
+        for sibling in info.siblings {
+            let path = Path::new(&sibling.rfilename);
+            if let Some(file_name) = path.file_name() {
+                let file_name_str = file_name.to_string_lossy();
