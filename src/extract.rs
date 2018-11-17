@@ -508,3 +508,27 @@ impl MetadataExtractor {
                     });
                 }
             }
+        }
+
+        Ok(shards)
+    }
+
+    async fn process_shard(
+        &self,
+        shard: UnindexedShard,
+        checkpoint: Option<ShardCheckpoint>,
+        destination: &str,
+        checkpoint_dir: Option<&str>,
+        hf_token: Option<String>,
+        multi_progress: Arc<MultiProgress>,
+    ) -> Result<()> {
+        let start_offset = checkpoint.as_ref().map(|c| c.offset).unwrap_or(0);
+
+        // Update checkpoint to in-progress
+        if let Some(dir) = checkpoint_dir {
+            let checkpoint = ShardCheckpoint {
+                shard_name: shard.name.clone(),
+                status: CheckpointStatus::InProgress,
+                offset: start_offset,
+                files_processed: 0,
+            };
