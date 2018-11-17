@@ -483,3 +483,28 @@ impl MetadataExtractor {
             let path = Path::new(&sibling.rfilename);
             if let Some(file_name) = path.file_name() {
                 let file_name_str = file_name.to_string_lossy();
+
+                if let Some(_captures) = self.shard_pattern.captures(&file_name_str) {
+                    let size = sibling.size.unwrap_or(0);
+                    let size_str = if size == 0 {
+                        "unknown".to_string()
+                    } else {
+                        format!("{} bytes", size)
+                    };
+
+                    println!(
+                        "[webshart] Found tar file: {} (size: {})",
+                        file_name_str, size_str
+                    );
+
+                    shards.push(UnindexedShard {
+                        name: file_name_str.to_string(),
+                        path: format!(
+                            "https://huggingface.co/datasets/{}/resolve/main/{}",
+                            repo_id, sibling.rfilename
+                        ),
+                        size,
+                        is_remote: true,
+                    });
+                }
+            }
