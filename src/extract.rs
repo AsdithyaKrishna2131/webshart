@@ -532,3 +532,28 @@ impl MetadataExtractor {
                 offset: start_offset,
                 files_processed: 0,
             };
+            self.save_checkpoint(dir, &checkpoint)?;
+        }
+
+        let metadata = match if shard.is_remote {
+            self.extract_remote_metadata(&shard, start_offset, hf_token.clone(), multi_progress)
+                .await
+        } else {
+            self.extract_local_metadata(&shard, start_offset, multi_progress)
+        } {
+            Ok(m) => m,
+            Err(e) => {
+                // Save failed checkpoint
+                if let Some(dir) = checkpoint_dir {
+                    let checkpoint = ShardCheckpoint {
+                        shard_name: shard.name.clone(),
+                        status: CheckpointStatus::Failed(e.to_string()),
+                        offset: start_offset,
+                        files_processed: 0,
+                    };
+                    self.save_checkpoint(dir, &checkpoint)?;
+                }
+                return Err(e);
+            }
+        };
+
