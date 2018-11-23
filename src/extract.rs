@@ -557,3 +557,27 @@ impl MetadataExtractor {
             }
         };
 
+        // Save metadata
+        self.save_metadata(&shard, metadata, destination).await?;
+
+        // Update checkpoint to complete
+        if let Some(dir) = checkpoint_dir {
+            let checkpoint = ShardCheckpoint {
+                shard_name: shard.name.clone(),
+                status: CheckpointStatus::Complete,
+                offset: shard.size,
+                files_processed: 0,
+            };
+            self.save_checkpoint(dir, &checkpoint)?;
+        }
+
+        Ok(())
+    }
+
+    async fn extract_remote_metadata(
+        &self,
+        shard: &UnindexedShard,
+        start_offset: u64,
+        hf_token: Option<String>,
+        multi_progress: Arc<MultiProgress>,
+    ) -> Result<ShardMetadata> {
