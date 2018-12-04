@@ -581,3 +581,28 @@ impl MetadataExtractor {
         hf_token: Option<String>,
         multi_progress: Arc<MultiProgress>,
     ) -> Result<ShardMetadata> {
+        // Create progress bar for download
+        let download_pb = multi_progress.add(ProgressBar::new(shard.size));
+        download_pb.set_style(
+            ProgressStyle::default_bar()
+                .template(
+                    "[{elapsed_precise}] {msg} [{bar:40.cyan/blue}] {bytes}/{total_bytes} ({eta})",
+                )
+                .unwrap()
+                .progress_chars("#>-"),
+        );
+        download_pb.set_message(format!("↓ {}", shard.name));
+
+        // Create request
+        let mut request = self
+            .client
+            .get(&shard.path)
+            .header("Accept-Encoding", "identity")
+            .timeout(std::time::Duration::from_secs(600));
+
+        if let Some(token) = &hf_token {
+            request = request.bearer_auth(token);
+        }
+
+        if start_offset > 0 {
+            request = request.header("Range", format!("bytes={}-", start_offset));
