@@ -606,3 +606,28 @@ impl MetadataExtractor {
 
         if start_offset > 0 {
             request = request.header("Range", format!("bytes={}-", start_offset));
+        }
+
+        let response = request.send().await.map_err(|e| {
+            WebshartError::Io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to connect: {}", e),
+            ))
+        })?;
+
+        if !response.status().is_success() {
+            download_pb.finish_and_clear();
+            return Err(WebshartError::InvalidShardFormat(format!(
+                "Failed to download tar file: {}",
+                response.status()
+            )));
+        }
+
+        // Get actual file size
+        let actual_size = response
+            .headers()
+            .get("content-length")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.parse::<u64>().ok())
+            .unwrap_or(shard.size);
+
