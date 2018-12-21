@@ -631,3 +631,27 @@ impl MetadataExtractor {
             .and_then(|v| v.parse::<u64>().ok())
             .unwrap_or(shard.size);
 
+        download_pb.set_length(actual_size);
+
+        // Stream to memory using channels
+        let (tx, rx) =
+            std::sync::mpsc::sync_channel::<std::result::Result<Vec<u8>, std::io::Error>>(100);
+
+        // Clone progress bar for the stream task
+        let download_pb_clone = download_pb.clone();
+
+        // Spawn task to stream chunks into channel
+        let shard_name_clone = shard.name.clone();
+        let stream_task = tokio::spawn(async move {
+            use futures::StreamExt;
+
+            let mut stream = response.bytes_stream();
+
+            while let Some(chunk_result) = stream.next().await {
+                match chunk_result {
+                    Ok(chunk) => {
+                        let chunk_len = chunk.len() as u64;
+                        download_pb_clone.inc(chunk_len);
+
+                        // Send chunk through channel
+                        if tx.send(std::result::Result::Ok(chunk.to_vec())).is_err() {
