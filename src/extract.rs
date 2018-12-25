@@ -655,3 +655,28 @@ impl MetadataExtractor {
 
                         // Send chunk through channel
                         if tx.send(std::result::Result::Ok(chunk.to_vec())).is_err() {
+                            break; // Receiver dropped
+                        }
+                    }
+                    Err(e) => {
+                        let _ = tx.send(std::result::Result::Err(std::io::Error::new(
+                            std::io::ErrorKind::Other,
+                            e.to_string(),
+                        )));
+                        break;
+                    }
+                }
+            }
+            download_pb_clone.finish_with_message(format!("✓ Downloaded {}", shard_name_clone));
+        });
+
+        // Create progress bar for processing
+        let process_pb = multi_progress.add(ProgressBar::new_spinner());
+        process_pb.set_style(
+            ProgressStyle::default_spinner()
+                .template("[{elapsed_precise}] {msg} {spinner} [{pos} files]")
+                .unwrap(),
+        );
+        process_pb.set_message(format!("⚙ Processing {}", shard.name));
+
+        // Process tar in blocking task using channel reader
