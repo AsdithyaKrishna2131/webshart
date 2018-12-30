@@ -680,3 +680,27 @@ impl MetadataExtractor {
         process_pb.set_message(format!("⚙ Processing {}", shard.name));
 
         // Process tar in blocking task using channel reader
+        let shard_name = shard.name.clone();
+        let compute_sha256 = self.compute_sha256;
+        let include_image_geometry = self.include_image_geometry;
+
+        let result = tokio::task::spawn_blocking(move || {
+            use tar::Archive;
+            // Create a custom reader that reads from the channel
+            struct ChannelReader {
+                rx: std::sync::mpsc::Receiver<std::result::Result<Vec<u8>, std::io::Error>>,
+                buffer: Vec<u8>,
+                pos: usize,
+            }
+            impl Read for ChannelReader {
+                fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+                    // If buffer is empty, get next chunk
+                    if self.pos >= self.buffer.len() {
+                        match self.rx.recv() {
+                            Ok(Ok(chunk)) => {
+                                self.buffer = chunk;
+                                self.pos = 0;
+                            }
+                            Ok(Err(e)) => return Err(e),
+                            Err(_) => return Ok(0), // Channel closed, EOF
+                        }
