@@ -753,3 +753,28 @@ impl MetadataExtractor {
                                     file_data.reserve(size as usize);
                                 }
                                 let mut buffer = [0; 8192];
+                                let mut total_read = 0u64;
+                                while total_read < size {
+                                    let to_read = std::cmp::min(buffer.len(), (size - total_read) as usize);
+                                    match entry.read_exact(&mut buffer[..to_read]) {
+                                        Ok(_) => {
+                                            if let Some(ref mut h) = hasher {
+                                                h.update(&buffer[..to_read]);
+                                            }
+                                            if need_dimensions || need_json_metadata {
+                                                file_data.extend_from_slice(&buffer[..to_read]);
+                                            }
+                                            total_read += to_read as u64;
+                                        }
+                                        Err(e) => {
+                                            eprintln!("[webshart] Error reading file {} for processing: {}", path, e);
+                                            break;
+                                        }
+                                    }
+                                }
+                            } else {
+                                // Skip the file if we don't need to process it
+                                std::io::copy(&mut entry, &mut std::io::sink())?;
+                            }
+                            let file_hash = if compute_sha256 {
+                                if size == 0 {
