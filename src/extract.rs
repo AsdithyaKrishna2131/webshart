@@ -729,3 +729,27 @@ impl MetadataExtractor {
             let mut archive = Archive::new(reader);
             let entries = archive.entries()?;
 
+            for entry in entries {
+                match entry {
+                    Ok(mut entry) => {
+                        let path = entry.path()?.to_string_lossy().to_string();
+                        let offset = entry.raw_header_position();
+                        let size = entry.size();
+
+                        if entry.header().entry_type() == tar::EntryType::Regular {
+                            let mut file_data = Vec::new();
+                            let mut hasher = if compute_sha256 && size > 0 && size < 10_000_000 {
+                                Some(Sha256::new())
+                            } else {
+                                None
+                            };
+                            // Determine if we need to read the file data
+                            let need_hash = hasher.is_some();
+                            let need_dimensions = include_image_geometry && is_image_file(&path) && size > 0 && size < 50_000_000;
+                            let need_json_metadata = is_json_file(&path) && size > 0 && size < 10_000_000;
+                            let should_read = need_hash || need_dimensions || need_json_metadata;
+                            if should_read {
+                                if need_dimensions || need_json_metadata {
+                                    file_data.reserve(size as usize);
+                                }
+                                let mut buffer = [0; 8192];
