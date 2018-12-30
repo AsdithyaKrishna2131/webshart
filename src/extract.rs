@@ -704,3 +704,28 @@ impl MetadataExtractor {
                             Ok(Err(e)) => return Err(e),
                             Err(_) => return Ok(0), // Channel closed, EOF
                         }
+                    }
+                    // Copy from buffer to output
+                    let available = self.buffer.len() - self.pos;
+                    if available == 0 {
+                        return Ok(0);
+                    }
+                    let to_copy = std::cmp::min(buf.len(), available);
+                    buf[..to_copy].copy_from_slice(&self.buffer[self.pos..self.pos + to_copy]);
+                    self.pos += to_copy;
+                    Ok(to_copy)
+                }
+            }
+
+            let reader = ChannelReader {
+                rx,
+                buffer: Vec::new(),
+                pos: 0,
+            };
+
+            let mut files = HashMap::new();
+            let mut json_by_path = HashMap::new();
+            let mut file_count = 0;
+            let mut archive = Archive::new(reader);
+            let entries = archive.entries()?;
+
