@@ -778,3 +778,28 @@ impl MetadataExtractor {
                             }
                             let file_hash = if compute_sha256 {
                                 if size == 0 {
+                                    Some("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855".to_string())
+                                } else if let Some(h) = hasher {
+                                    Some(digest_to_hex(h.finalize()))
+                                } else {
+                                    None
+                                }
+                            } else {
+                                None
+                            };
+                            // Extract image dimensions if needed
+                            let (width, height, aspect) = if need_dimensions && !file_data.is_empty() {
+                                extract_image_dimensions(&file_data).unwrap_or((0, 0, 0.0))
+                            } else {
+                                (0, 0, 0.0)
+                            };
+                            if need_json_metadata && !file_data.is_empty() {
+                                if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&file_data) {
+                                    json_by_path.insert(path.clone(), value);
+                                }
+                            }
+                            files.insert(path.clone(), FileInfo {
+                                path: Some(path.clone()),
+                                offset: offset + 512,
+                                length: size,
+                                sha256: file_hash,
