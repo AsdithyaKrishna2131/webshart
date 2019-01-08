@@ -876,3 +876,28 @@ impl MetadataExtractor {
         let entries = archive.entries()?;
         for entry in entries {
             match entry {
+                Ok(mut entry) => {
+                    let path = entry.path()?.to_string_lossy().to_string();
+                    let offset = entry.raw_header_position();
+                    let size = entry.size();
+
+                    // Skip if before start_offset (for resuming)
+                    if offset < start_offset {
+                        continue;
+                    }
+
+                    // Only process regular files
+                    if entry.header().entry_type() == tar::EntryType::Regular {
+                        let mut file_data = Vec::new();
+                        let mut hasher = if self.compute_sha256 && size > 0 && size < 10_000_000 {
+                            Some(Sha256::new())
+                        } else {
+                            None
+                        };
+
+                        // Determine if we need to read the file
+                        let need_hash = hasher.is_some();
+                        let need_dimensions = self.include_image_geometry
+                            && is_image_file(&path)
+                            && size > 0
+                            && size < 50_000_000;
