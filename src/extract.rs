@@ -803,3 +803,27 @@ impl MetadataExtractor {
                                 offset: offset + 512,
                                 length: size,
                                 sha256: file_hash,
+                                width: if width > 0 { Some(width) } else { None },
+                                height: if height > 0 { Some(height) } else { None },
+                                aspect: if aspect > 0.0 { Some(aspect) } else { None },
+                                json_path: None,
+                                json_offset: None,
+                                json_length: None,
+                                captions: None,
+                                json_metadata: None,
+                            });
+                            file_count += 1;
+                            process_pb.inc(1);
+                        }
+                    }
+                    Err(e) => {
+                        eprintln!("[webshart] Error reading tar entry: {}", e);
+                    }
+                }
+            }
+
+            process_pb.finish_with_message(format!("✓ Processed {} ({} files)", shard_name, file_count));
+            Ok::<(HashMap<String, FileInfo>, HashMap<String, serde_json::Value>), WebshartError>((
+                files,
+                json_by_path,
+            ))
