@@ -852,3 +852,27 @@ impl MetadataExtractor {
         shard: &UnindexedShard,
         start_offset: u64,
         multi_progress: Arc<MultiProgress>,
+    ) -> Result<ShardMetadata> {
+        use std::fs::File;
+        use tar::Archive;
+
+        let mut files = HashMap::new();
+        let mut json_by_path = HashMap::new();
+        let mut file_count = 0;
+
+        // Create progress bar
+        let pb = multi_progress.add(ProgressBar::new_spinner());
+        pb.set_style(
+            ProgressStyle::default_spinner()
+                .template("[{elapsed_precise}] {msg} {spinner} [{pos} files]")
+                .unwrap(),
+        );
+        pb.set_message(format!("⚙ Processing {}", shard.name));
+
+        let file = File::open(&shard.path)?;
+        let mut archive = Archive::new(file);
+
+        // Process entries
+        let entries = archive.entries()?;
+        for entry in entries {
+            match entry {
