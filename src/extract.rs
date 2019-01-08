@@ -827,3 +827,28 @@ impl MetadataExtractor {
                 files,
                 json_by_path,
             ))
+        }).await.map_err(|e| WebshartError::Io(std::io::Error::new(
+            std::io::ErrorKind::Other,
+            format!("Task join error: {}", e)
+        )))??;
+
+        // Wait for stream task to complete
+        let _ = stream_task.await;
+
+        let mut metadata = ShardMetadata::from_format(ShardMetadataFormat::HashMap {
+            path: Some(shard.name.clone()),
+            filesize: actual_size,
+            hash: None,
+            hash_lfs: None,
+            files: result.0,
+            includes_image_geometry: self.include_image_geometry,
+        });
+        metadata.attach_json_metadata(&result.1);
+        Ok(metadata)
+    }
+
+    fn extract_local_metadata(
+        &self,
+        shard: &UnindexedShard,
+        start_offset: u64,
+        multi_progress: Arc<MultiProgress>,
