@@ -901,3 +901,28 @@ impl MetadataExtractor {
                             && is_image_file(&path)
                             && size > 0
                             && size < 50_000_000;
+                        let need_json_metadata =
+                            is_json_file(&path) && size > 0 && size < 10_000_000;
+                        let should_read = need_hash || need_dimensions || need_json_metadata;
+
+                        if should_read {
+                            if need_dimensions || need_json_metadata {
+                                file_data.reserve(size as usize);
+                            }
+
+                            let mut buffer = [0; 8192];
+                            loop {
+                                match std::io::Read::read(&mut entry, &mut buffer) {
+                                    Ok(0) => break,
+                                    Ok(n) => {
+                                        if let Some(ref mut h) = hasher {
+                                            h.update(&buffer[..n]);
+                                        }
+                                        if need_dimensions || need_json_metadata {
+                                            file_data.extend_from_slice(&buffer[..n]);
+                                        }
+                                    }
+                                    Err(e) => {
+                                        eprintln!("[webshart] Error reading file {}: {}", path, e);
+                                        break;
+                                    }
