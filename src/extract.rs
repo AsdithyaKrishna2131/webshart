@@ -950,3 +950,28 @@ impl MetadataExtractor {
                             extract_image_dimensions(&file_data).unwrap_or((0, 0, 0.0))
                         } else {
                             (0, 0, 0.0)
+                        };
+                        if need_json_metadata && !file_data.is_empty() {
+                            if let Ok(value) =
+                                serde_json::from_slice::<serde_json::Value>(&file_data)
+                            {
+                                json_by_path.insert(path.clone(), value);
+                            }
+                        }
+
+                        files.insert(
+                            path.clone(),
+                            FileInfo {
+                                path: Some(path.clone()),
+                                offset: offset + 512, // Add header size to get file content offset
+                                length: size,
+                                sha256: file_hash,
+                                width: if width > 0 { Some(width) } else { None },
+                                height: if height > 0 { Some(height) } else { None },
+                                aspect: if aspect > 0.0 { Some(aspect) } else { None },
+                                json_path: None,
+                                json_offset: None,
+                                json_length: None,
+                                captions: None,
+                                json_metadata: None,
+                            },
