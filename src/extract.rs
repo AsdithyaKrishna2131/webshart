@@ -926,3 +926,27 @@ impl MetadataExtractor {
                                         eprintln!("[webshart] Error reading file {}: {}", path, e);
                                         break;
                                     }
+                                }
+                            }
+                        } else {
+                            // Skip the file if we don't need to process it
+                            std::io::copy(&mut entry, &mut std::io::sink())?;
+                        }
+
+                        let file_hash = if self.compute_sha256 {
+                            if size == 0 {
+                                Some("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855".to_string())
+                            } else if let Some(h) = hasher {
+                                Some(digest_to_hex(h.finalize()))
+                            } else {
+                                None
+                            }
+                        } else {
+                            None
+                        };
+
+                        // Extract dimensions if needed
+                        let (width, height, aspect) = if need_dimensions && !file_data.is_empty() {
+                            extract_image_dimensions(&file_data).unwrap_or((0, 0, 0.0))
+                        } else {
+                            (0, 0, 0.0)
