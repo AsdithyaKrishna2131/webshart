@@ -975,3 +975,27 @@ impl MetadataExtractor {
                                 captions: None,
                                 json_metadata: None,
                             },
+                        );
+
+                        file_count += 1;
+                        pb.inc(1);
+                    }
+                }
+                Err(e) => {
+                    eprintln!("[webshart] Error reading tar entry: {}", e);
+                    // Continue processing other entries
+                }
+            }
+        }
+
+        pb.finish_with_message(format!("✓ Processed {} ({} files)", shard.name, file_count));
+
+        // Calculate file hash if requested
+        let tar_hash = if self.compute_sha256 && shard.size < 100_000_000 {
+            let hash_pb = multi_progress.add(ProgressBar::new(shard.size));
+            hash_pb.set_style(
+                ProgressStyle::default_bar()
+                    .template(
+                        "[{elapsed_precise}] {msg} [{bar:40.cyan/blue}] {bytes}/{total_bytes}",
+                    )
+                    .unwrap()
