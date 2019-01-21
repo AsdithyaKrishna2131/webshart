@@ -999,3 +999,28 @@ impl MetadataExtractor {
                         "[{elapsed_precise}] {msg} [{bar:40.cyan/blue}] {bytes}/{total_bytes}",
                     )
                     .unwrap()
+                    .progress_chars("#>-"),
+            );
+            hash_pb.set_message(format!("# Computing hash for {}", shard.name));
+
+            let mut file = File::open(&shard.path)?;
+            let mut hasher = Sha256::new();
+            let mut buffer = [0; 8192];
+            let mut total_read = 0u64;
+            loop {
+                match std::io::Read::read(&mut file, &mut buffer) {
+                    Ok(0) => break,
+                    Ok(n) => {
+                        hasher.update(&buffer[..n]);
+                        total_read += n as u64;
+                        hash_pb.set_position(total_read);
+                    }
+                    Err(e) => {
+                        hash_pb.finish_and_clear();
+                        return Err(WebshartError::Io(e));
+                    }
+                }
+            }
+            hash_pb.finish_with_message(format!("✓ Hash computed for {}", shard.name));
+            Some(digest_to_hex(hasher.finalize()))
+        } else {
