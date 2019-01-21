@@ -1024,3 +1024,27 @@ impl MetadataExtractor {
             hash_pb.finish_with_message(format!("✓ Hash computed for {}", shard.name));
             Some(digest_to_hex(hasher.finalize()))
         } else {
+            None
+        };
+
+        let mut metadata = ShardMetadata::from_format(ShardMetadataFormat::HashMap {
+            path: Some(shard.name.clone()),
+            filesize: shard.size,
+            hash: tar_hash.clone(),
+            hash_lfs: tar_hash,
+            files,
+            includes_image_geometry: self.include_image_geometry,
+        });
+        metadata.attach_json_metadata(&json_by_path);
+        Ok(metadata)
+    }
+
+    fn load_checkpoints(&self, dir: &str) -> Result<HashMap<String, ShardCheckpoint>> {
+        let mut checkpoints = HashMap::new();
+        if let Ok(entries) = std::fs::read_dir(dir) {
+            for entry in entries {
+                if let Ok(entry) = entry {
+                    let path = entry.path();
+                    if path.extension().and_then(|s| s.to_str()) == Some("json") {
+                        if let Ok(content) = std::fs::read_to_string(&path) {
+                            if let Ok(checkpoint) =
