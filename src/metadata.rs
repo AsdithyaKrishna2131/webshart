@@ -82,3 +82,23 @@ pub struct FileInfo {
 #[serde(untagged)]
 pub enum ShardMetadataFormat {
     /// Standard format with HashMap
+    HashMap {
+        #[serde(default)]
+        path: Option<String>,
+        filesize: u64,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        hash: Option<String>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        hash_lfs: Option<String>,
+        files: HashMap<String, FileInfo>,
+        /// Whether image geometry was extracted
+        #[serde(default)]
+        includes_image_geometry: bool,
+    },
+    /// Alternative format with Vec (common in some webdatasets)
+    Vec {
+        #[serde(default)]
+        path: Option<String>,
+        #[serde(default)]
+        filesize: u64,
+        files: Vec<FileInfo>,
