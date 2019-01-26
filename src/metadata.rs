@@ -63,3 +63,22 @@ pub struct FileInfo {
     /// Offset of the paired JSON metadata file inside the tar shard.
     #[serde(skip_serializing_if = "Option::is_none", default)]
     pub json_offset: Option<u64>,
+
+    /// Length of the paired JSON metadata file in bytes.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub json_length: Option<u64>,
+
+    /// Caption field extracted from paired JSON metadata.
+    #[serde(skip_serializing_if = "Option::is_none", default, alias = "caption")]
+    pub captions: Option<CaptionValue>,
+
+    /// Parsed paired JSON metadata when it is stored directly in the index.
+    #[serde(skip_serializing_if = "Option::is_none", default)]
+    pub json_metadata: Option<Value>,
+}
+
+/// Metadata for a single shard - supports both HashMap and Vec formats
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum ShardMetadataFormat {
+    /// Standard format with HashMap
