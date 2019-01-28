@@ -102,3 +102,22 @@ pub enum ShardMetadataFormat {
         #[serde(default)]
         filesize: u64,
         files: Vec<FileInfo>,
+        /// Whether image geometry was extracted
+        #[serde(default)]
+        includes_image_geometry: bool,
+    },
+}
+
+/// Unified metadata interface
+#[derive(Debug, Clone)]
+pub struct ShardMetadata {
+    pub path: String,
+    pub filesize: u64,
+    pub hash: Option<String>,
+    pub hash_lfs: Option<String>,
+    pub includes_image_geometry: bool,
+    files: Vec<FileInfoInternal>, // Internal storage with guaranteed path
+    sample_indices: Vec<usize>,   // Logical samples, excluding paired sidecars
+    txt_sidecar_indices: Vec<Option<usize>>, // Paired `.txt` member per logical sample
+}
+
