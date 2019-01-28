@@ -121,3 +121,22 @@ pub struct ShardMetadata {
     txt_sidecar_indices: Vec<Option<usize>>, // Paired `.txt` member per logical sample
 }
 
+/// Counts used to describe how captions are represented in a shard.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct CaptionLayoutCounts {
+    pub samples: usize,
+    pub captioned_samples: usize,
+    pub embedded_samples: usize,
+    pub json_sidecar_samples: usize,
+    pub txt_sidecar_samples: usize,
+}
+
+impl ShardMetadata {
+    /// Get files as a vector of FileInfo
+    pub fn files(&self) -> Vec<FileInfo> {
+        self.files.iter().map(FileInfo::from).collect()
+    }
+
+    /// Iterate over files without materializing the entire metadata table.
+    pub fn iter_files(&self) -> impl Iterator<Item = (&str, FileInfo)> + '_ {
+        self.files
