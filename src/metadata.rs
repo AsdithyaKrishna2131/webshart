@@ -217,3 +217,22 @@ impl ShardMetadata {
 
     fn is_json_path(path: &str) -> bool {
         path.rsplit_once('.')
+            .map(|(_, ext)| ext.eq_ignore_ascii_case("json"))
+            .unwrap_or(false)
+    }
+
+    fn is_txt_path(path: &str) -> bool {
+        path.rsplit_once('.')
+            .map(|(_, ext)| ext.eq_ignore_ascii_case("txt"))
+            .unwrap_or(false)
+    }
+
+    fn is_sidecar_path(path: &str) -> bool {
+        Self::is_json_path(path) || Self::is_txt_path(path)
+    }
+
+    fn infer_json_sidecars(&mut self) {
+        let mut json_by_key: HashMap<String, (String, u64, u64)> = HashMap::new();
+        let mut primary_keys: HashSet<String> = HashSet::new();
+        let mut txt_keys: HashSet<String> = HashSet::new();
+
