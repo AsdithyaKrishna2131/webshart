@@ -198,3 +198,22 @@ impl From<&FileInfoInternal> for FileInfo {
             width: info.width,
             height: info.height,
             aspect: info.aspect,
+            json_path: info.json_path.clone(),
+            json_offset: info.json_offset,
+            json_length: info.json_length,
+            captions: info.captions.clone(),
+            json_metadata: info.json_metadata.clone(),
+        }
+    }
+}
+
+impl ShardMetadata {
+    fn sample_key(path: &str) -> String {
+        match path.rsplit_once('.') {
+            Some((stem, _)) => stem.to_string(),
+            None => path.to_string(),
+        }
+    }
+
+    fn is_json_path(path: &str) -> bool {
+        path.rsplit_once('.')
