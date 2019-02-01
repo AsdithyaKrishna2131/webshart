@@ -159,3 +159,23 @@ struct FileInfoInternal {
     pub offset: u64,
     pub length: u64,
     pub sha256: Option<String>,
+    pub width: Option<u32>,
+    pub height: Option<u32>,
+    pub aspect: Option<f32>,
+    pub json_path: Option<String>,
+    pub json_offset: Option<u64>,
+    pub json_length: Option<u64>,
+    pub captions: Option<CaptionValue>,
+    pub json_metadata: Option<Value>,
+}
+
+impl From<FileInfo> for FileInfoInternal {
+    fn from(info: FileInfo) -> Self {
+        Self {
+            path: info.path.unwrap_or_else(|| String::from("unknown")),
+            offset: info.offset,
+            length: info.length,
+            sha256: info.sha256,
+            width: info.width,
+            height: info.height,
+            aspect: info.aspect,
