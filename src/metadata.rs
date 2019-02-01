@@ -179,3 +179,22 @@ impl From<FileInfo> for FileInfoInternal {
             width: info.width,
             height: info.height,
             aspect: info.aspect,
+            json_path: info.json_path,
+            json_offset: info.json_offset,
+            json_length: info.json_length,
+            captions: info.captions,
+            json_metadata: info.json_metadata,
+        }
+    }
+}
+
+impl From<&FileInfoInternal> for FileInfo {
+    fn from(info: &FileInfoInternal) -> Self {
+        Self {
+            path: Some(info.path.clone()),
+            offset: info.offset,
+            length: info.length,
+            sha256: info.sha256.clone(),
+            width: info.width,
+            height: info.height,
+            aspect: info.aspect,
