@@ -236,3 +236,23 @@ impl ShardMetadata {
         let mut primary_keys: HashSet<String> = HashSet::new();
         let mut txt_keys: HashSet<String> = HashSet::new();
 
+        for file in &self.files {
+            let key = Self::sample_key(&file.path);
+            if Self::is_json_path(&file.path) {
+                json_by_key.insert(key, (file.path.clone(), file.offset, file.length));
+            } else if Self::is_txt_path(&file.path) {
+                txt_keys.insert(key);
+            } else {
+                primary_keys.insert(key);
+            }
+        }
+
+        let logical_sample_keys: HashSet<String> = primary_keys.union(&txt_keys).cloned().collect();
+
+        for file in &mut self.files {
+            let key = Self::sample_key(&file.path);
+            let is_paired_txt = Self::is_txt_path(&file.path) && primary_keys.contains(&key);
+            if Self::is_json_path(&file.path) || is_paired_txt {
+                continue;
+            }
+
