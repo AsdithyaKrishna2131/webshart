@@ -275,3 +275,22 @@ impl ShardMetadata {
                 if logical_sample_keys.contains(&key) {
                     file.json_path = None;
                     file.json_offset = None;
+                    file.json_length = None;
+                }
+            }
+        }
+    }
+
+    fn rebuild_sample_index(&mut self) {
+        let primary_keys: HashSet<String> = self
+            .files
+            .iter()
+            .filter(|info| !Self::is_sidecar_path(&info.path))
+            .map(|info| Self::sample_key(&info.path))
+            .collect();
+        let non_json_keys: HashSet<String> = self
+            .files
+            .iter()
+            .filter(|info| !Self::is_json_path(&info.path))
+            .map(|info| Self::sample_key(&info.path))
+            .collect();
