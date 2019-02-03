@@ -294,3 +294,22 @@ impl ShardMetadata {
             .filter(|info| !Self::is_json_path(&info.path))
             .map(|info| Self::sample_key(&info.path))
             .collect();
+
+        self.sample_indices = self
+            .files
+            .iter()
+            .enumerate()
+            .filter_map(|(idx, info)| {
+                let key = Self::sample_key(&info.path);
+                let is_paired_sidecar = (Self::is_txt_path(&info.path)
+                    && primary_keys.contains(&key))
+                    || (Self::is_json_path(&info.path) && non_json_keys.contains(&key));
+                if is_paired_sidecar {
+                    None
+                } else {
+                    Some(idx)
+                }
+            })
+            .collect();
+
+        let txt_by_key: HashMap<String, usize> = self
