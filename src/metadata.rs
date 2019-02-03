@@ -256,3 +256,22 @@ impl ShardMetadata {
                 continue;
             }
 
+            if let Some((json_path, json_offset, json_length)) = json_by_key.get(&key) {
+                if file.json_path.is_none() {
+                    file.json_path = Some(json_path.clone());
+                }
+                if file.json_offset.is_none() {
+                    file.json_offset = Some(*json_offset);
+                }
+                if file.json_length.is_none() {
+                    file.json_length = Some(*json_length);
+                }
+            }
+        }
+
+        for file in &mut self.files {
+            if Self::is_json_path(&file.path) {
+                let key = Self::sample_key(&file.path);
+                if logical_sample_keys.contains(&key) {
+                    file.json_path = None;
+                    file.json_offset = None;
