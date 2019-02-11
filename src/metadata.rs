@@ -313,3 +313,23 @@ impl ShardMetadata {
             .collect();
 
         let txt_by_key: HashMap<String, usize> = self
+            .files
+            .iter()
+            .enumerate()
+            .filter(|(_, info)| {
+                Self::is_txt_path(&info.path)
+                    && primary_keys.contains(&Self::sample_key(&info.path))
+            })
+            .map(|(idx, info)| (Self::sample_key(&info.path), idx))
+            .collect();
+        self.txt_sidecar_indices = self
+            .sample_indices
+            .iter()
+            .map(|file_index| {
+                self.files
+                    .get(*file_index)
+                    .and_then(|info| txt_by_key.get(&Self::sample_key(&info.path)).copied())
+            })
+            .collect();
+    }
+
