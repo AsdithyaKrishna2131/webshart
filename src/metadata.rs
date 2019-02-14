@@ -352,3 +352,22 @@ impl ShardMetadata {
                 if let Some(field) = obj.get(key) {
                     match field {
                         Value::String(text) if !text.is_empty() => {
+                            if seen.insert(text.clone()) {
+                                captions.push(text.clone());
+                            }
+                        }
+                        Value::Array(items) => {
+                            for item in items {
+                                if let Some(text) = item.as_str() {
+                                    if !text.is_empty() && seen.insert(text.to_string()) {
+                                        captions.push(text.to_string());
+                                    }
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+            }
+        }
+
