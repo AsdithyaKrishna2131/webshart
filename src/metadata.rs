@@ -333,3 +333,22 @@ impl ShardMetadata {
             .collect();
     }
 
+    pub(crate) fn extract_caption_value(value: &Value) -> Option<CaptionValue> {
+        let keys = [
+            "caption",
+            "captions",
+            "text",
+            "txt",
+            "description",
+            "descriptions",
+            "prompt",
+            "alt_text",
+        ];
+
+        let mut captions = Vec::new();
+        let mut seen = HashSet::new();
+        if let Some(obj) = value.as_object() {
+            for key in keys {
+                if let Some(field) = obj.get(key) {
+                    match field {
+                        Value::String(text) if !text.is_empty() => {
