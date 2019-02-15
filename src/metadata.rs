@@ -371,3 +371,22 @@ impl ShardMetadata {
             }
         }
 
+        match captions.len() {
+            0 => None,
+            1 => Some(CaptionValue::Single(captions.remove(0))),
+            _ => Some(CaptionValue::Multiple(captions)),
+        }
+    }
+
+    pub fn attach_json_metadata(&mut self, json_by_path: &HashMap<String, Value>) {
+        for file in &mut self.files {
+            if let Some(json_path) = &file.json_path {
+                if let Some(value) = json_by_path.get(json_path) {
+                    let captions = Self::extract_caption_value(value);
+                    if file.captions.is_none() {
+                        file.captions = captions;
+                    }
+                    if file.json_metadata.is_none() {
+                        file.json_metadata = Some(value.clone());
+                    }
+                }
