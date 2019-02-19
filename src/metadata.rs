@@ -390,3 +390,23 @@ impl ShardMetadata {
                         file.json_metadata = Some(value.clone());
                     }
                 }
+            }
+        }
+    }
+
+    /// Create from either format
+    pub fn from_format(format: ShardMetadataFormat) -> Self {
+        let mut metadata = match format {
+            ShardMetadataFormat::HashMap {
+                path,
+                filesize,
+                hash,
+                hash_lfs,
+                files,
+                includes_image_geometry,
+            } => {
+                // Convert HashMap to Vec, setting the path from the HashMap key
+                let mut file_vec: Vec<FileInfoInternal> = files
+                    .into_iter()
+                    .map(|(filename, mut file_info)| {
+                        // Set the path from the HashMap key if not already set
