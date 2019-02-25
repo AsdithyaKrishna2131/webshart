@@ -410,3 +410,22 @@ impl ShardMetadata {
                     .into_iter()
                     .map(|(filename, mut file_info)| {
                         // Set the path from the HashMap key if not already set
+                        if file_info.path.is_none() {
+                            file_info.path = Some(filename);
+                        }
+                        FileInfoInternal::from(file_info)
+                    })
+                    .collect();
+                file_vec.sort_by(|a, b| a.path.cmp(&b.path));
+
+                Self {
+                    path: path.unwrap_or_else(|| String::from("unknown")),
+                    filesize,
+                    hash,
+                    hash_lfs,
+                    includes_image_geometry,
+                    files: file_vec,
+                    sample_indices: Vec::new(),
+                    txt_sidecar_indices: Vec::new(),
+                }
+            }
