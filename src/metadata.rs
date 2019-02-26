@@ -429,3 +429,22 @@ impl ShardMetadata {
                     txt_sidecar_indices: Vec::new(),
                 }
             }
+            ShardMetadataFormat::Vec {
+                path,
+                filesize,
+                files,
+                includes_image_geometry,
+            } => {
+                let mut file_vec: Vec<FileInfoInternal> =
+                    files.into_iter().map(FileInfoInternal::from).collect();
+                file_vec.sort_by(|a, b| a.path.cmp(&b.path));
+
+                Self {
+                    path: path.unwrap_or_else(|| String::from("unknown")),
+                    filesize,
+                    hash: None,
+                    hash_lfs: None,
+                    includes_image_geometry,
+                    files: file_vec,
+                    sample_indices: Vec::new(),
+                    txt_sidecar_indices: Vec::new(),
