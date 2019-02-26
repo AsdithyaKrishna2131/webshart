@@ -448,3 +448,22 @@ impl ShardMetadata {
                     files: file_vec,
                     sample_indices: Vec::new(),
                     txt_sidecar_indices: Vec::new(),
+                }
+            }
+        };
+
+        metadata.infer_json_sidecars();
+        metadata.rebuild_sample_index();
+        metadata
+    }
+
+    /// Get the number of files in this shard
+    pub fn num_files(&self) -> usize {
+        self.files.len()
+    }
+
+    /// Get file info by name
+    pub fn get_file(&self, name: &str) -> Option<FileInfo> {
+        self.files
+            .iter()
+            .find(|f| f.path == name)
