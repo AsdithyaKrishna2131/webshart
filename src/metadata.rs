@@ -467,3 +467,22 @@ impl ShardMetadata {
         self.files
             .iter()
             .find(|f| f.path == name)
+            .map(FileInfo::from)
+    }
+
+    /// Get all filenames in order
+    pub fn filenames(&self) -> Vec<String> {
+        self.files.iter().map(|f| f.path.clone()).collect()
+    }
+
+    /// Get the number of logical samples, excluding paired sidecars.
+    pub fn num_samples(&self) -> usize {
+        self.sample_indices.len()
+    }
+
+    /// Get sample filenames in order, excluding paired sidecars.
+    pub fn sample_filenames(&self) -> Vec<String> {
+        self.sample_indices
+            .iter()
+            .filter_map(|idx| self.files.get(*idx))
+            .map(|info| info.path.clone())
