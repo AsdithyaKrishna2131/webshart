@@ -486,3 +486,171 @@ impl ShardMetadata {
             .iter()
             .filter_map(|idx| self.files.get(*idx))
             .map(|info| info.path.clone())
+            .collect()
+    }
+
+    /// Get sample by logical sample index, excluding paired sidecars.
+    pub fn get_sample_by_index(&self, index: usize) -> Option<(String, FileInfo)> {
+        self.sample_indices
+            .get(index)
+            .and_then(|idx| self.files.get(*idx))
+            .map(|info| (info.path.clone(), FileInfo::from(info)))
+    }
+
+    /// Get a paired `.txt` caption sidecar for a logical sample.
+    pub fn get_txt_sidecar_by_sample_index(&self, index: usize) -> Option<(String, FileInfo)> {
+        self.txt_sidecar_indices
+            .get(index)
+            .copied()
+            .flatten()
+            .and_then(|file_index| self.files.get(file_index))
+            .map(|info| (info.path.clone(), FileInfo::from(info)))
+    }
+
+    /// Count caption layouts for the logical samples in this shard.
+    pub fn caption_layout_counts(&self) -> CaptionLayoutCounts {
+        let mut counts = CaptionLayoutCounts {
+            samples: self.num_samples(),
+            ..CaptionLayoutCounts::default()
+        };
+
+        for sample_index in 0..self.num_samples() {
+            let Some((_filename, file_info)) = self.get_sample_by_index(sample_index) else {
+                continue;
+            };
+            let has_txt = self.get_txt_sidecar_by_sample_index(sample_index).is_some();
+            let has_json = file_info.json_path.is_some();
+            let has_embedded = file_info.captions.is_some() && !has_txt && !has_json;
+
+            counts.txt_sidecar_samples += usize::from(has_txt);
+            counts.json_sidecar_samples += usize::from(has_json);
+            counts.embedded_samples += usize::from(has_embedded);
+            counts.captioned_samples += usize::from(has_txt || file_info.captions.is_some());
+        }
+
+        counts
+    }
+
+    /// Store captions on a logical sample entry.
+    pub fn set_sample_captions(&mut self, index: usize, captions: CaptionValue) -> bool {
+        let Some(file_index) = self.sample_indices.get(index).copied() else {
+            return false;
+        };
+        let Some(file_info) = self.files.get_mut(file_index) else {
+            return false;
+        };
+        file_info.captions = Some(captions);
+        true
+    }
+
+    /// Return a bounded range of logical samples without cloning unrelated files.
+    pub fn sample_range(&self, start: usize, end: usize) -> Vec<(String, FileInfo)> {
+        self.sample_indices
+            .iter()
+            .skip(start)
+            .take(end.saturating_sub(start))
+            .filter_map(|idx| self.files.get(*idx))
+            .map(|info| (info.path.clone(), FileInfo::from(info)))
+            .collect()
+    }
+
+    /// Get file by index
+    pub fn get_file_by_index(&self, index: usize) -> Option<(String, FileInfo)> {
+        self.files
+            .get(index)
+            .map(|info| (info.path.clone(), FileInfo::from(info)))
+    }
+}
+
+// Custom deserializer that tries both formats
+impl<'de> Deserialize<'de> for ShardMetadata {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let format = ShardMetadataFormat::deserialize(deserializer)?;
+        Ok(ShardMetadata::from_format(format))
+    }
+}
+
+impl Serialize for ShardMetadata {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // Serialize back to HashMap format for compatibility
+        let mut files_map = HashMap::new();
+        for file in &self.files {
+            files_map.insert(
+                file.path.clone(),
+                FileInfo {
+                    path: Some(file.path.clone()),
+                    offset: file.offset,
+                    length: file.length,
+                    sha256: file.sha256.clone(),
+                    width: file.width,
+                    height: file.height,
+                    aspect: file.aspect,
+                    json_path: file.json_path.clone(),
+                    json_offset: file.json_offset,
+                    json_length: file.json_length,
+                    captions: file.captions.clone(),
+                    json_metadata: file.json_metadata.clone(),
+                },
+            );
+        }
+
+        #[derive(Serialize)]
+        struct Helper<'a> {
+            path: &'a str,
+            filesize: u64,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            hash: &'a Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            hash_lfs: &'a Option<String>,
+            files: HashMap<String, FileInfo>,
+            includes_image_geometry: bool,
+        }
+
+        let helper = Helper {
+            path: &self.path,
+            filesize: self.filesize,
+            hash: &self.hash,
+            hash_lfs: &self.hash_lfs,
+            files: files_map,
+            includes_image_geometry: self.includes_image_geometry,
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+pub fn ensure_shard_metadata_with_retry(
+    dataset: &mut DiscoveredDataset,
+    shard_idx: usize,
+) -> Result<()> {
+    let mut attempts = 0;
+    const MAX_ATTEMPTS: u32 = 5;
+
+    loop {
+        match dataset.ensure_shard_metadata(shard_idx) {
+            Ok(_) => return Ok(()),
+            Err(e) => {
+                if attempts >= MAX_ATTEMPTS {
+                    return Err(e.into());
+                }
+
+                if matches!(e, WebshartError::RateLimited) || e.to_string().contains("429") {
+                    attempts += 1;
+                    let wait_time = Duration::from_secs(2u64.pow(attempts));
+                    eprintln!(
+                        "[webshart] Rate limited, waiting {:?} before retry",
+                        wait_time
+                    );
+                    std::thread::sleep(wait_time);
+                } else {
+                    return Err(e.into());
+                }
+            }
+        }
+    }
