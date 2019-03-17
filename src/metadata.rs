@@ -525,3 +525,22 @@ impl ShardMetadata {
             counts.txt_sidecar_samples += usize::from(has_txt);
             counts.json_sidecar_samples += usize::from(has_json);
             counts.embedded_samples += usize::from(has_embedded);
+            counts.captioned_samples += usize::from(has_txt || file_info.captions.is_some());
+        }
+
+        counts
+    }
+
+    /// Store captions on a logical sample entry.
+    pub fn set_sample_captions(&mut self, index: usize, captions: CaptionValue) -> bool {
+        let Some(file_index) = self.sample_indices.get(index).copied() else {
+            return false;
+        };
+        let Some(file_info) = self.files.get_mut(file_index) else {
+            return false;
+        };
+        file_info.captions = Some(captions);
+        true
+    }
+
+    /// Return a bounded range of logical samples without cloning unrelated files.
