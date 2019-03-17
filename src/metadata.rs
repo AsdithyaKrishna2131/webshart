@@ -506,3 +506,22 @@ impl ShardMetadata {
             .and_then(|file_index| self.files.get(file_index))
             .map(|info| (info.path.clone(), FileInfo::from(info)))
     }
+
+    /// Count caption layouts for the logical samples in this shard.
+    pub fn caption_layout_counts(&self) -> CaptionLayoutCounts {
+        let mut counts = CaptionLayoutCounts {
+            samples: self.num_samples(),
+            ..CaptionLayoutCounts::default()
+        };
+
+        for sample_index in 0..self.num_samples() {
+            let Some((_filename, file_info)) = self.get_sample_by_index(sample_index) else {
+                continue;
+            };
+            let has_txt = self.get_txt_sidecar_by_sample_index(sample_index).is_some();
+            let has_json = file_info.json_path.is_some();
+            let has_embedded = file_info.captions.is_some() && !has_txt && !has_json;
+
+            counts.txt_sidecar_samples += usize::from(has_txt);
+            counts.json_sidecar_samples += usize::from(has_json);
+            counts.embedded_samples += usize::from(has_embedded);
