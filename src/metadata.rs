@@ -544,3 +544,22 @@ impl ShardMetadata {
     }
 
     /// Return a bounded range of logical samples without cloning unrelated files.
+    pub fn sample_range(&self, start: usize, end: usize) -> Vec<(String, FileInfo)> {
+        self.sample_indices
+            .iter()
+            .skip(start)
+            .take(end.saturating_sub(start))
+            .filter_map(|idx| self.files.get(*idx))
+            .map(|info| (info.path.clone(), FileInfo::from(info)))
+            .collect()
+    }
+
+    /// Get file by index
+    pub fn get_file_by_index(&self, index: usize) -> Option<(String, FileInfo)> {
+        self.files
+            .get(index)
+            .map(|info| (info.path.clone(), FileInfo::from(info)))
+    }
+}
+
+// Custom deserializer that tries both formats
