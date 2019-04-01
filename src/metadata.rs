@@ -563,3 +563,23 @@ impl ShardMetadata {
 }
 
 // Custom deserializer that tries both formats
+impl<'de> Deserialize<'de> for ShardMetadata {
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let format = ShardMetadataFormat::deserialize(deserializer)?;
+        Ok(ShardMetadata::from_format(format))
+    }
+}
+
+impl Serialize for ShardMetadata {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        // Serialize back to HashMap format for compatibility
+        let mut files_map = HashMap::new();
+        for file in &self.files {
+            files_map.insert(
+                file.path.clone(),
