@@ -29,3 +29,14 @@ impl MetadataResolver {
     pub fn new(
         metadata_source: Option<String>,
         hf_token: Option<String>,
+        runtime: Arc<Runtime>,
+    ) -> Self {
+        Self {
+            metadata_source,
+            hf_token,
+            client: reqwest::Client::new(),
+            runtime,
+        }
+    }
+
+    /// Resolve metadata location for a given tar file
