@@ -52,3 +52,15 @@ impl MetadataResolver {
 
             if Self::source_is_hub_repo(metadata_source) {
                 let base_url = format!(
+                    "https://huggingface.co/datasets/{}/resolve/main",
+                    metadata_source
+                );
+                if is_remote {
+                    if let Some(sub) = subfolder {
+                        format!("{}/{}/{}.json", base_url, sub, base_name)
+                    } else {
+                        format!("{}/{}.json", base_url, base_name)
+                    }
+                } else {
+                    format!("{}/{}.json", base_url, base_name)
+                }
