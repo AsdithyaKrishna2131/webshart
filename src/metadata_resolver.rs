@@ -75,3 +75,15 @@ impl MetadataResolver {
                 } else {
                     format!("{}/{}.json", base_url, base_name)
                 }
+            } else {
+                let mut path = Path::new(metadata_source).to_path_buf();
+                if is_remote {
+                    if let Some(sub) = subfolder {
+                        path = path.join(sub);
+                    }
+                }
+                path.join(format!("{}.json", base_name))
+                    .to_string_lossy()
+                    .to_string()
+            }
+        } else {
