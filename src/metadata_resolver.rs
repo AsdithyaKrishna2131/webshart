@@ -64,3 +64,14 @@ impl MetadataResolver {
                 } else {
                     format!("{}/{}.json", base_url, base_name)
                 }
+            } else if metadata_source.starts_with("http") {
+                let base_url = metadata_source.trim_end_matches('/');
+                if is_remote {
+                    if let Some(sub) = subfolder {
+                        format!("{}/{}/{}.json", base_url, sub, base_name)
+                    } else {
+                        format!("{}/{}.json", base_url, base_name)
+                    }
+                } else {
+                    format!("{}/{}.json", base_url, base_name)
+                }
