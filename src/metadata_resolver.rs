@@ -17,3 +17,15 @@ pub struct MetadataResolver {
     runtime: Arc<Runtime>,
 }
 
+impl MetadataResolver {
+    fn source_is_hub_repo(source: &str) -> bool {
+        !source.starts_with("http")
+            && !Path::new(source).exists()
+            && !Path::new(source).is_absolute()
+            && !source.starts_with('.')
+            && source.split('/').filter(|part| !part.is_empty()).count() == 2
+    }
+
+    pub fn new(
+        metadata_source: Option<String>,
+        hf_token: Option<String>,
