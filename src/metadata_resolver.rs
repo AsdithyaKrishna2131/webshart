@@ -40,3 +40,15 @@ impl MetadataResolver {
     }
 
     /// Resolve metadata location for a given tar file
+    pub fn resolve_metadata_path(
+        &self,
+        tar_path: &str,
+        base_name: &str,
+        is_remote: bool,
+    ) -> String {
+        if let Some(metadata_source) = &self.metadata_source {
+            // Extract subfolder path from tar_path
+            let subfolder = self.extract_subfolder(tar_path, is_remote);
+
+            if Self::source_is_hub_repo(metadata_source) {
+                let base_url = format!(
