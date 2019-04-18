@@ -98,3 +98,15 @@ impl MetadataResolver {
                     .with_extension("json")
                     .to_string_lossy()
                     .to_string()
+            }
+        }
+    }
+
+    pub fn get_source(&self) -> Option<String> {
+        self.metadata_source.clone()
+    }
+
+    #[cfg(test)]
+    pub(crate) fn get_hf_token(&self) -> Option<&str> {
+        self.hf_token.as_deref()
+    }
