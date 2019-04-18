@@ -87,3 +87,14 @@ impl MetadataResolver {
                     .to_string()
             }
         } else {
+            // Default: co-located with tar
+            if is_remote {
+                tar_path
+                    .strip_suffix(".tar")
+                    .map(|path| format!("{path}.json"))
+                    .unwrap_or_else(|| format!("{tar_path}.json"))
+            } else {
+                Path::new(tar_path)
+                    .with_extension("json")
+                    .to_string_lossy()
+                    .to_string()
