@@ -122,3 +122,14 @@ impl MetadataResolver {
                     if last_slash > 0 {
                         return Some(after_main[..last_slash].to_string());
                     }
+                }
+            }
+        } else {
+            // For local paths, this is trickier - we'd need to know the base dataset path
+            // For now, return None and handle this in the discovery module
+        }
+        None
+    }
+
+    /// Load metadata from resolved path
+    pub async fn load_metadata(
