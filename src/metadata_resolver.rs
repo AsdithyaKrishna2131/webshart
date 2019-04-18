@@ -110,3 +110,15 @@ impl MetadataResolver {
     pub(crate) fn get_hf_token(&self) -> Option<&str> {
         self.hf_token.as_deref()
     }
+
+    /// Extract subfolder from tar path
+    fn extract_subfolder(&self, tar_path: &str, is_remote: bool) -> Option<String> {
+        if is_remote {
+            // For URLs like: https://huggingface.co/datasets/repo/resolve/main/subfolder/file.tar
+            // Extract "subfolder" part
+            if let Some(pos) = tar_path.find("/resolve/main/") {
+                let after_main = &tar_path[pos + 14..]; // Skip "/resolve/main/"
+                if let Some(last_slash) = after_main.rfind('/') {
+                    if last_slash > 0 {
+                        return Some(after_main[..last_slash].to_string());
+                    }
