@@ -156,3 +156,15 @@ impl MetadataResolver {
 
     fn load_local_metadata(&self, path: &str) -> Result<ShardMetadata> {
         let content = fs::read_to_string(path)?;
+        let metadata: ShardMetadata = serde_json::from_str(&content)?;
+        Ok(metadata)
+    }
+
+    async fn load_remote_metadata(&self, url: &str) -> Result<ShardMetadata> {
+        let mut request = self.client.get(url);
+
+        if let Some(token) = &self.hf_token {
+            request = request.bearer_auth(token);
+        }
+
+        let response = request.send().await?;
