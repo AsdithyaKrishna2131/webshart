@@ -133,3 +133,15 @@ impl MetadataResolver {
 
     /// Load metadata from resolved path
     pub async fn load_metadata(
+        &self,
+        metadata_path: &str,
+        _is_remote: bool,
+    ) -> Result<ShardMetadata> {
+        if metadata_path.starts_with("http") {
+            self.load_remote_metadata(metadata_path).await
+        } else {
+            self.load_local_metadata(metadata_path)
+        }
+    }
+
+    /// Check if metadata exists at the resolved location
