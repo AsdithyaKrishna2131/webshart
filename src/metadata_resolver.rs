@@ -145,3 +145,14 @@ impl MetadataResolver {
     }
 
     /// Check if metadata exists at the resolved location
+    pub fn metadata_exists(&self, metadata_path: &str, _is_remote: bool) -> bool {
+        if metadata_path.starts_with("http") {
+            self.runtime
+                .block_on(self.check_remote_metadata(metadata_path))
+        } else {
+            Path::new(metadata_path).exists()
+        }
+    }
+
+    fn load_local_metadata(&self, path: &str) -> Result<ShardMetadata> {
+        let content = fs::read_to_string(path)?;
