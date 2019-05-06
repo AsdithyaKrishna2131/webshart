@@ -11,3 +11,7 @@ use dataloader::{scale_dimensions, PyBucketDataLoader, PyTarDataLoader, PyTarFil
 pub use dataloader::{AspectBucketIterator, BatchOperations, BatchResult, FileReadRequest};
 pub use discovery::{DatasetDiscovery, DiscoveredDataset};
 pub use error::{Result, WebshartError};
+pub use extract::MetadataExtractor;
+pub use metadata::{FileInfo, ShardMetadata};
+
+fn digest_to_hex(digest: impl AsRef<[u8]>) -> String {
