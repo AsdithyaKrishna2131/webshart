@@ -15,3 +15,8 @@ pub use extract::MetadataExtractor;
 pub use metadata::{FileInfo, ShardMetadata};
 
 fn digest_to_hex(digest: impl AsRef<[u8]>) -> String {
+    digest
+        .as_ref()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
