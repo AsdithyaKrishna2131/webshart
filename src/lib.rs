@@ -20,3 +20,7 @@ fn digest_to_hex(digest: impl AsRef<[u8]>) -> String {
         .iter()
         .map(|byte| format!("{byte:02x}"))
         .collect()
+}
+
+/// A Python module implemented in Rust for fast webdataset shard reading
+#[pymodule]
