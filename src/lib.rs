@@ -24,3 +24,7 @@ fn digest_to_hex(digest: impl AsRef<[u8]>) -> String {
 
 /// A Python module implemented in Rust for fast webdataset shard reading
 #[pymodule]
+fn _webshart(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    m.add("__version__", env!("CARGO_PKG_VERSION"))?;
+
+    // Add Python classes
