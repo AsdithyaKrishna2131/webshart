@@ -7,3 +7,7 @@ mod extract;
 mod metadata;
 mod metadata_resolver;
 // Re-export main types
+use dataloader::{scale_dimensions, PyBucketDataLoader, PyTarDataLoader, PyTarFileEntry};
+pub use dataloader::{AspectBucketIterator, BatchOperations, BatchResult, FileReadRequest};
+pub use discovery::{DatasetDiscovery, DiscoveredDataset};
+pub use error::{Result, WebshartError};
