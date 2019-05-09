@@ -82,3 +82,27 @@ class SamplePair:
     right: SampleLocation
 
 
+@dataclass(frozen=True)
+class LoadedSamplePair:
+    """Loaded values for a :class:`SamplePair`."""
+
+    key: str
+    left: Any
+    right: Any
+
+
+def _default_pair_key(filename: str) -> str:
+    return str(PurePosixPath(filename).with_suffix(""))
+
+
+class PairedDataset:
+    """Opt-in key join over two independently discovered datasets.
+
+    The underlying datasets and their normal loader behavior are unchanged.
+    Pair locations are indexed lazily the first time they are requested.
+    """
+
+    def __init__(
+        self,
+        left: DiscoveredDataset,
+        right: DiscoveredDataset,
