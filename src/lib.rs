@@ -28,3 +28,8 @@ fn _webshart(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add("__version__", env!("CARGO_PKG_VERSION"))?;
 
     // Add Python classes
+    m.add_class::<discovery::PyDatasetDiscovery>()?;
+    m.add_class::<discovery::PyDiscoveredDataset>()?;
+    m.add_class::<discovery::PyShardReader>()?;
+    m.add_class::<dataloader::PyBatchOperations>()?;
+    m.add_class::<extract::PyMetadataExtractor>()?;
