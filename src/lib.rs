@@ -37,3 +37,7 @@ fn _webshart(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<PyTarFileEntry>()?;
     m.add_class::<PyBucketDataLoader>()?;
     m.add_function(wrap_pyfunction!(scale_dimensions, m)?)?;
+
+    Ok(())
+}
+
