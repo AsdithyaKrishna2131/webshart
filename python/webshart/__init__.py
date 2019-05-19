@@ -106,3 +106,26 @@ class PairedDataset:
         self,
         left: DiscoveredDataset,
         right: DiscoveredDataset,
+        *,
+        strict: bool = True,
+        pair_key: Optional[Callable[[str], str]] = None,
+    ) -> None:
+        self.left = left
+        self.right = right
+        self.strict = strict
+        self.pair_key = pair_key or _default_pair_key
+        self._pairs: Optional[List[SamplePair]] = None
+        self._unmatched_left: Optional[List[str]] = None
+        self._unmatched_right: Optional[List[str]] = None
+
+    def _sample_locations(
+        self, dataset: DiscoveredDataset, side: str
+    ) -> Dict[str, SampleLocation]:
+        locations: Dict[str, SampleLocation] = {}
+        for shard_index in range(dataset.num_shards):
+            for sample_index, filename in enumerate(
+                dataset.list_samples_in_shard(shard_index)
+            ):
+                key = self.pair_key(str(filename))
+                if key in locations:
+                    raise ValueError(f"duplicate pair key on {side}: {key!r}")
