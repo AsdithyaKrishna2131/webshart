@@ -129,3 +129,27 @@ class PairedDataset:
                 key = self.pair_key(str(filename))
                 if key in locations:
                     raise ValueError(f"duplicate pair key on {side}: {key!r}")
+                locations[key] = SampleLocation(
+                    shard_index=shard_index,
+                    sample_index=sample_index,
+                    filename=str(filename),
+                )
+        return locations
+
+    def _ensure_index(self) -> None:
+        if self._pairs is not None:
+            return
+
+        left = self._sample_locations(self.left, "left")
+        right = self._sample_locations(self.right, "right")
+        self._unmatched_left = [key for key in left if key not in right]
+        self._unmatched_right = [key for key in right if key not in left]
+
+        if self.strict and (self._unmatched_left or self._unmatched_right):
+            left_example = self._unmatched_left[:3]
+            right_example = self._unmatched_right[:3]
+            raise ValueError(
+                "paired datasets do not have identical keys: "
+                f"left_only={len(self._unmatched_left)} {left_example!r}, "
+                f"right_only={len(self._unmatched_right)} {right_example!r}"
+            )
