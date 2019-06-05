@@ -201,3 +201,27 @@ class PairedTarDataLoader:
     def __len__(self) -> int:
         return len(self.dataset)
 
+    def load_pair(self, index: int) -> LoadedSamplePair:
+        pair = self.dataset.get_pair(index)
+        return LoadedSamplePair(
+            key=pair.key,
+            left=self.left_loader.load_sample(
+                pair.left.shard_index, pair.left.sample_index
+            ),
+            right=self.right_loader.load_sample(
+                pair.right.shard_index, pair.right.sample_index
+            ),
+        )
+
+    def iter_pairs(
+        self, start: int = 0, end: Optional[int] = None
+    ) -> Iterator[LoadedSamplePair]:
+        stop = len(self) if end is None else min(end, len(self))
+        for index in range(start, stop):
+            yield self.load_pair(index)
+
+
+def _is_json_path(path: str) -> bool:
+    return Path(path).suffix.lower() == ".json"
+
+
