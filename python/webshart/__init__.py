@@ -153,3 +153,27 @@ class PairedDataset:
                 f"left_only={len(self._unmatched_left)} {left_example!r}, "
                 f"right_only={len(self._unmatched_right)} {right_example!r}"
             )
+
+        self._pairs = [
+            SamplePair(key=key, left=location, right=right[key])
+            for key, location in left.items()
+            if key in right
+        ]
+
+    @property
+    def num_pairs(self) -> int:
+        self._ensure_index()
+        return len(self._pairs or ())
+
+    @property
+    def unmatched_left(self) -> List[str]:
+        self._ensure_index()
+        return list(self._unmatched_left or ())
+
+    @property
+    def unmatched_right(self) -> List[str]:
+        self._ensure_index()
+        return list(self._unmatched_right or ())
+
+    def __len__(self) -> int:
+        return self.num_pairs
