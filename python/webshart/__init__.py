@@ -177,3 +177,27 @@ class PairedDataset:
 
     def __len__(self) -> int:
         return self.num_pairs
+
+    def get_pair(self, index: int) -> SamplePair:
+        self._ensure_index()
+        assert self._pairs is not None
+        return self._pairs[index]
+
+    def list_pairs(self, start: int = 0, end: Optional[int] = None) -> List[SamplePair]:
+        """Return a stable slice of pairs in left-dataset order."""
+        self._ensure_index()
+        assert self._pairs is not None
+        return self._pairs[start:end]
+
+
+class PairedTarDataLoader:
+    """Load joined samples without changing :class:`TarDataLoader` semantics."""
+
+    def __init__(self, dataset: PairedDataset, **loader_kwargs: Any) -> None:
+        self.dataset = dataset
+        self.left_loader = TarDataLoader(dataset.left, **loader_kwargs)
+        self.right_loader = TarDataLoader(dataset.right, **loader_kwargs)
+
+    def __len__(self) -> int:
+        return len(self.dataset)
+
