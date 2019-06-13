@@ -225,3 +225,26 @@ def _is_json_path(path: str) -> bool:
     return Path(path).suffix.lower() == ".json"
 
 
+def _sample_lookup_keys(path: str) -> List[str]:
+    path_obj = Path(path)
+    stem_path = str(path_obj.with_suffix(""))
+    keys = [path, path_obj.name, stem_path, path_obj.stem]
+    return list(dict.fromkeys(str(key) for key in keys if key))
+
+
+def _normalize_captions(value: Any) -> OptionalCaptionValue:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    if isinstance(value, (list, tuple)):
+        captions = [str(item) for item in value if item is not None and str(item)]
+        return captions or None
+    return str(value)
+
+
+def apply_captions_to_metadata(
+    metadata: MutableMapping[str, Any],
+    captions_by_sample: Mapping[str, OptionalCaptionValue],
+) -> int:
+    """Attach captions to a webshart metadata mapping in-place.
