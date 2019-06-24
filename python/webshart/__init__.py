@@ -272,3 +272,27 @@ def apply_captions_to_metadata(
     else:
         iterator = (
             (entry.get("path") or entry.get("filename") or entry.get("fname"), entry)
+            for entry in files
+            if isinstance(entry, dict)
+        )
+
+    for path, entry in iterator:
+        if not path or not isinstance(entry, dict) or _is_json_path(str(path)):
+            continue
+
+        captions = next(
+            (
+                normalized[key]
+                for key in _sample_lookup_keys(str(path))
+                if key in normalized
+            ),
+            None,
+        )
+        if captions is None:
+            continue
+
+        entry.pop("caption", None)
+        entry["captions"] = captions
+        updated += 1
+
+    return updated
