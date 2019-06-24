@@ -248,3 +248,27 @@ def apply_captions_to_metadata(
     captions_by_sample: Mapping[str, OptionalCaptionValue],
 ) -> int:
     """Attach captions to a webshart metadata mapping in-place.
+
+    Captions are stored under the canonical plural ``captions`` key and may be a
+    single string or a list of strings. Existing singular ``caption`` keys are
+    removed from updated sample entries.
+    """
+    files = metadata.get("files")
+    if not isinstance(files, (dict, list)):
+        raise ValueError("webshart metadata must contain a 'files' dict or list")
+
+    normalized: Dict[str, CaptionValue] = {}
+    for sample, value in captions_by_sample.items():
+        captions = _normalize_captions(value)
+        if captions is None:
+            continue
+        for key in _sample_lookup_keys(str(sample)):
+            normalized[key] = captions
+
+    updated = 0
+
+    if isinstance(files, dict):
+        iterator = files.items()
+    else:
+        iterator = (
+            (entry.get("path") or entry.get("filename") or entry.get("fname"), entry)
