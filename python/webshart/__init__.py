@@ -296,3 +296,27 @@ def apply_captions_to_metadata(
         updated += 1
 
     return updated
+
+
+def write_captions_to_metadata(
+    metadata_path: Union[str, Path],
+    captions_by_sample: Mapping[str, OptionalCaptionValue],
+    output_path: Optional[Union[str, Path]] = None,
+) -> int:
+    """Write captions into a webshart shard metadata JSON file.
+
+    Args:
+        metadata_path: Existing webshart metadata JSON file to read.
+        captions_by_sample: Mapping from sample path/stem to caption string or list.
+        output_path: Optional destination JSON file. Defaults to updating
+            ``metadata_path`` in place.
+
+    Returns:
+        Number of sample entries updated.
+    """
+    metadata_path = Path(metadata_path)
+    destination = Path(output_path) if output_path is not None else metadata_path
+
+    with metadata_path.open("r", encoding="utf-8") as handle:
+        metadata = json.load(handle)
+
