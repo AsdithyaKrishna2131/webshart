@@ -320,3 +320,27 @@ def write_captions_to_metadata(
     with metadata_path.open("r", encoding="utf-8") as handle:
         metadata = json.load(handle)
 
+    updated = apply_captions_to_metadata(metadata, captions_by_sample)
+
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("w", encoding="utf-8") as handle:
+        json.dump(metadata, handle, ensure_ascii=False, indent=2)
+
+    return updated
+
+
+def upload_caption_metadata(
+    metadata_dir: Union[str, Path],
+    repo_id: str,
+    *,
+    path_in_repo: str = "",
+    revision: str = "main",
+    hf_token: Optional[str] = None,
+    commit_message: str = "Add coalesced webshart caption metadata",
+):
+    """Upload exported caption metadata to a Hugging Face dataset repository.
+
+    This is deliberately separate from coalescing: callers can inspect the
+    generated JSON before performing the external write.
+    """
+    try:
