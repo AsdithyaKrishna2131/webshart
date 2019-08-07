@@ -391,3 +391,27 @@ def discover_dataset(
     if Path(source).exists() and Path(source).is_dir():
         return discovery.discover_local(source)
     else:
+        # Assume it's a HuggingFace repo
+        return discovery.discover_huggingface(source, subfolder=subfolder)
+
+
+def discover_paired_dataset(
+    left_source: str,
+    right_source: Optional[str] = None,
+    *,
+    left_subfolder: Optional[str] = None,
+    right_subfolder: Optional[str] = None,
+    left_metadata: Optional[str] = None,
+    right_metadata: Optional[str] = None,
+    hf_token: Optional[str] = None,
+    strict: bool = True,
+    pair_key: Optional[Callable[[str], str]] = None,
+) -> PairedDataset:
+    """Discover two datasets and join logical samples by filename stem.
+
+    ``right_source`` defaults to ``left_source`` for unified repositories whose
+    two independently usable datasets live in separate subfolders.
+    """
+    right_source = right_source or left_source
+    left = discover_dataset(
+        left_source,
