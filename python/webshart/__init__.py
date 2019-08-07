@@ -344,3 +344,26 @@ def upload_caption_metadata(
     generated JSON before performing the external write.
     """
     try:
+        from huggingface_hub import HfApi
+    except ImportError as exc:
+        raise ImportError(
+            "Hub uploads require huggingface-hub; install webshart[hub]"
+        ) from exc
+
+    return HfApi(token=hf_token).upload_folder(
+        folder_path=str(metadata_dir),
+        repo_id=repo_id,
+        repo_type="dataset",
+        path_in_repo=path_in_repo,
+        revision=revision,
+        commit_message=commit_message,
+        allow_patterns=["*.json", "**/*.json"],
+    )
+
+
+def discover_dataset(
+    source: str,
+    hf_token: Optional[str] = None,
+    subfolder: Optional[str] = None,
+    metadata: Optional[str] = None,
+) -> DiscoveredDataset:
