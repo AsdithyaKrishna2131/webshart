@@ -367,3 +367,27 @@ def discover_dataset(
     subfolder: Optional[str] = None,
     metadata: Optional[str] = None,
 ) -> DiscoveredDataset:
+    """
+    Discover dataset shards from various sources (synchronous).
+
+    Args:
+        source: Can be:
+            - Local directory path (e.g., '/path/to/dataset/')
+            - HuggingFace dataset repo (e.g., 'username/dataset-name')
+        hf_token: Optional HuggingFace token for private datasets
+        subfolder: Optional subfolder within HuggingFace repo
+        metadata: Optional separate location for metadata:
+            - Local directory path for metadata files
+            - HuggingFace repo (e.g., 'username/dataset-index')
+            - Full URL prefix
+
+    Returns:
+        DiscoveredDataset object with all shards discovered
+    """
+    hf_token = hf_token or os.environ.get("HF_TOKEN")
+    discovery = DatasetDiscovery(hf_token=hf_token, metadata_source=metadata)
+
+    # Check if it's a local path
+    if Path(source).exists() and Path(source).is_dir():
+        return discovery.discover_local(source)
+    else:
