@@ -415,3 +415,27 @@ def discover_paired_dataset(
     right_source = right_source or left_source
     left = discover_dataset(
         left_source,
+        hf_token=hf_token,
+        subfolder=left_subfolder,
+        metadata=left_metadata,
+    )
+    right = discover_dataset(
+        right_source,
+        hf_token=hf_token,
+        subfolder=right_subfolder,
+        metadata=right_metadata,
+    )
+    return PairedDataset(left, right, strict=strict, pair_key=pair_key)
+
+
+def extract_metadata(args):
+    """Extract metadata from unindexed webdataset shards."""
+    extractor = MetadataExtractor(hf_token=args.hf_token or os.environ.get("HF_TOKEN"))
+
+    # Parse range if provided
+    shard_range = None
+    if args.range:
+        try:
+            parts = args.range.split(",")
+            if len(parts) != 2:
+                raise ValueError("Range must be in format 'start,end'")
