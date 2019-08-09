@@ -463,3 +463,26 @@ def extract_metadata(args):
             )
         else:
             extractor.extract_metadata(
+                source=args.source,
+                destination=args.destination,
+                checkpoint_dir=args.checkpoint_dir,
+                max_workers=args.max_workers,
+                include_image_geometry=args.include_image_geometry,
+            )
+        print(f"✓ Metadata extraction complete for {args.source}")
+    except Exception as e:
+        print(f"✗ Error extracting metadata: {e}", file=sys.stderr)
+        sys.exit(1)
+
+
+def optimize_captions(args):
+    """Coalesce sidecar captions into exportable per-shard metadata."""
+    hf_token = args.hf_token or os.environ.get("HF_TOKEN")
+    dataset = discover_dataset(
+        args.source,
+        hf_token=hf_token,
+        subfolder=args.subfolder,
+        metadata=args.metadata,
+    )
+    if args.shard_cache_dir:
+        dataset.enable_shard_cache(
