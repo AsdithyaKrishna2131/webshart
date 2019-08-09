@@ -439,3 +439,27 @@ def extract_metadata(args):
             parts = args.range.split(",")
             if len(parts) != 2:
                 raise ValueError("Range must be in format 'start,end'")
+            start = int(parts[0])
+            end = int(parts[1])
+            if start < 0 or end < start:
+                raise ValueError(
+                    "Invalid range: start must be >= 0 and end must be >= start"
+                )
+            shard_range = (start, end)
+            print(f"Processing shards in range [{start}, {end})")
+        except Exception as e:
+            print(f"✗ Error parsing range: {e}", file=sys.stderr)
+            sys.exit(1)
+
+    try:
+        if shard_range:
+            extractor.extract_metadata(
+                source=args.source,
+                destination=args.destination,
+                checkpoint_dir=args.checkpoint_dir,
+                max_workers=args.max_workers,
+                shard_range=shard_range,
+                include_image_geometry=args.include_image_geometry,
+            )
+        else:
+            extractor.extract_metadata(
