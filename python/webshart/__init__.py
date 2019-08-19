@@ -510,3 +510,27 @@ def optimize_captions(args):
 
     if args.push_to_hub:
         commit = upload_caption_metadata(
+            args.destination,
+            args.push_to_hub,
+            path_in_repo=args.path_in_repo,
+            revision=args.revision,
+            hf_token=hf_token,
+        )
+        print(f"Uploaded caption metadata: {commit}")
+
+
+def run_optimize_dataset(args):
+    """Run rolling dataset conversion from the CLI."""
+    extensions = (
+        tuple(part.strip() for part in args.payload_extensions.split(","))
+        if args.payload_extensions
+        else DEFAULT_PAYLOAD_EXTENSIONS
+    )
+    result = optimize_dataset(
+        args.source,
+        destination=args.destination,
+        push_to_hub=args.push_to_hub,
+        source_subfolder=args.source_subfolder,
+        output_prefix=args.output_prefix,
+        source_revision=args.source_revision,
+        target_revision=args.target_revision,
