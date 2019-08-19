@@ -486,3 +486,27 @@ def optimize_captions(args):
     )
     if args.shard_cache_dir:
         dataset.enable_shard_cache(
+            args.shard_cache_dir,
+            cache_limit_gb=args.shard_cache_gb,
+            parallel_downloads=args.parallel_downloads,
+        )
+
+    shard_indices = None
+    if args.range:
+        start, end = (int(part) for part in args.range.split(",", 1))
+        if start < 0 or end < start:
+            raise ValueError("range must be start,end with 0 <= start <= end")
+        shard_indices = list(range(start, min(end, dataset.num_shards)))
+
+    loader = TarDataLoader(dataset, load_file_data=False)
+    result = loader.coalesce_caption_metadata(
+        destination=args.destination,
+        shard_indices=shard_indices,
+    )
+    print(
+        f"Coalesced {result['coalesced_samples']} captions across "
+        f"{result['shards']} shards into {args.destination}"
+    )
+
+    if args.push_to_hub:
+        commit = upload_caption_metadata(
