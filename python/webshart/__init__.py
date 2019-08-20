@@ -534,3 +534,27 @@ def run_optimize_dataset(args):
         output_prefix=args.output_prefix,
         source_revision=args.source_revision,
         target_revision=args.target_revision,
+        hf_token=args.hf_token,
+        max_shard_size_bytes=int(args.max_shard_size_gb * 1024**3),
+        payload_extensions=extensions,
+        include_image_geometry=not args.no_image_geometry,
+        max_shards=args.max_shards,
+        private=True if args.private else None,
+    )
+    total_samples = result["total_samples"] or "?"
+    print(
+        f"Optimized {result['next_sample_index']}/{total_samples} samples "
+        f"into {result['next_shard_index']} shards "
+        f"(created {result['shards_created']} this run; status={result['status']})"
+    )
+
+
+def discover_datasets_batch(
+    sources: List[str],
+    hf_token: Optional[str] = None,
+    subfolders: Optional[List[Optional[str]]] = None,
+) -> List[Optional[DiscoveredDataset]]:
+    """
+    Discover multiple datasets in parallel.
+
+    Args:
