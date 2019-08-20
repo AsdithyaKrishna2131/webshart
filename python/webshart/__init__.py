@@ -558,3 +558,27 @@ def discover_datasets_batch(
     Discover multiple datasets in parallel.
 
     Args:
+        sources: List of dataset sources (local paths or HF repos)
+        hf_token: Optional HuggingFace token for private datasets
+        subfolders: Optional list of subfolders (one per source, or None)
+
+    Returns:
+        List of DiscoveredDataset objects (None for failed discoveries)
+
+    Example:
+        >>> datasets = discover_datasets_batch([
+        ...     '/path/to/local/dataset',
+        ...     'username/hf-dataset-1',
+        ...     'username/hf-dataset-2'
+        ... ])
+        >>> for ds in datasets:
+        ...     if ds:
+        ...         print(f"Found {ds.num_shards} shards in {ds.name}")
+    """
+    batch_ops = BatchOperations()
+    return batch_ops.discover_datasets_batch(
+        sources, hf_token=hf_token, subfolders=subfolders
+    )
+
+
+def read_files_batch(
