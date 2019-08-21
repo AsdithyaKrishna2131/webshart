@@ -582,3 +582,26 @@ def discover_datasets_batch(
 
 
 def read_files_batch(
+    dataset_or_datasets: Union[DiscoveredDataset, List[DiscoveredDataset]],
+    file_requests: List[Union[Tuple[int, int], Tuple[int, int, int]]],
+) -> List[Optional[bytes]]:
+    """
+    Read multiple files from datasets in parallel.
+
+    Args:
+        dataset_or_datasets: Single dataset or list of datasets
+        file_requests: List of file requests as tuples:
+            - If single dataset: (shard_idx, file_idx)
+            - If multiple datasets: (dataset_idx, shard_idx, file_idx)
+
+    Returns:
+        List of file contents as bytes (None for failed reads)
+
+    Example:
+        >>> # Single dataset
+        >>> dataset = discover_dataset('username/dataset')
+        >>> files = read_files_batch(dataset, [
+        ...     (0, 0),  # First file in first shard
+        ...     (0, 1),  # Second file in first shard
+        ...     (1, 0),  # First file in second shard
+        ... ])
