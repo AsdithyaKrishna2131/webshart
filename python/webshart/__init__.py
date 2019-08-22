@@ -605,3 +605,27 @@ def read_files_batch(
         ...     (0, 1),  # Second file in first shard
         ...     (1, 0),  # First file in second shard
         ... ])
+
+        >>> # Multiple datasets
+        >>> datasets = discover_datasets_batch(['dataset1', 'dataset2'])
+        >>> files = read_files_batch(datasets, [
+        ...     (0, 0, 0),  # Dataset 0, shard 0, file 0
+        ...     (1, 0, 0),  # Dataset 1, shard 0, file 0
+        ... ])
+    """
+    batch_ops = BatchOperations()
+
+    # Normalize to list of datasets
+    if isinstance(dataset_or_datasets, DiscoveredDataset):
+        datasets = [dataset_or_datasets]
+        # Convert (shard, file) to (0, shard, file)
+        requests = [(0, s, f) for s, f in file_requests]
+    else:
+        datasets = dataset_or_datasets
+        requests = file_requests
+
+    return batch_ops.read_files_batch(datasets, requests)
+
+
+class BatchProcessor:
+    """
