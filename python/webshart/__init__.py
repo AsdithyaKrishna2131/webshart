@@ -629,3 +629,27 @@ def read_files_batch(
 
 class BatchProcessor:
     """
+    Helper class for processing webdataset files in batches.
+
+    Example:
+        >>> processor = BatchProcessor()
+        >>> results = processor.process_dataset(
+        ...     'username/dataset',
+        ...     batch_size=100,
+        ...     max_workers=10
+        ... )
+    """
+
+    def __init__(self):
+        self.batch_ops = BatchOperations()
+
+    def process_dataset(
+        self,
+        source: str,
+        batch_size: int = 50,
+        max_files: Optional[int] = None,
+        callback: Optional[callable] = None,
+    ) -> List[Any]:
+        """
+        Process all files in a dataset in batches.
+
