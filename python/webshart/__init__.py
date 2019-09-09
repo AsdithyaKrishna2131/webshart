@@ -725,3 +725,26 @@ def main():
     extract_parser.add_argument(
         "--checkpoint-dir",
         help="Directory for checkpoint files to enable resumable extraction",
+    )
+    extract_parser.add_argument(
+        "--max-workers",
+        type=int,
+        default=4,
+        help="Maximum number of parallel workers (default: 4)",
+    )
+    extract_parser.add_argument(
+        "--hf-token", help="HuggingFace token for private datasets"
+    )
+    extract_parser.add_argument(
+        "--range",
+        help="Range of tar file indices to process (e.g., '0,1000' for indices 0-999). "
+        "Useful for distributing work across multiple machines.",
+    )
+    extract_parser.add_argument(
+        "--include-image-geometry",
+        action="store_true",
+        help="Include image geometry (width, height, aspect ratio) in metadata extraction",
+    )
+
+    optimize_parser = subparsers.add_parser(
+        "optimize-captions",
