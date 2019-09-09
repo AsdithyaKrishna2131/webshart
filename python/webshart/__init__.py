@@ -701,3 +701,27 @@ class BatchProcessor:
         return results
 
 
+def main():
+    """Main CLI entry point."""
+    parser = argparse.ArgumentParser(
+        description="webshart - Fast webdataset shard utilities"
+    )
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # extract-metadata subcommand
+    extract_parser = subparsers.add_parser(
+        "extract-metadata", help="Extract metadata from unindexed webdataset shards"
+    )
+    extract_parser.add_argument(
+        "--source",
+        required=True,
+        help="Source dataset (local path or HF repo like 'laion/conceptual-captions-12m-webdataset')",
+    )
+    extract_parser.add_argument(
+        "--destination",
+        required=True,
+        help="Destination for metadata (local path or HF repo like 'username/dataset-name')",
+    )
+    extract_parser.add_argument(
+        "--checkpoint-dir",
+        help="Directory for checkpoint files to enable resumable extraction",
