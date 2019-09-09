@@ -677,3 +677,27 @@ class BatchProcessor:
                 all_requests.append((shard_idx, file_idx))
 
                 if max_files and len(all_requests) >= max_files:
+                    break
+
+            if max_files and len(all_requests) >= max_files:
+                break
+
+        # Process in batches
+        results = []
+        for i in range(0, len(all_requests), batch_size):
+            batch_requests = all_requests[i : i + batch_size]
+            batch_data = read_files_batch(dataset, batch_requests)
+
+            # Apply callback if provided
+            if callback:
+                for data in batch_data:
+                    if data:
+                        results.append(callback(data))
+                    else:
+                        results.append(None)
+            else:
+                results.extend(batch_data)
+
+        return results
+
+
