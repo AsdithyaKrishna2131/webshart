@@ -653,3 +653,27 @@ class BatchProcessor:
         """
         Process all files in a dataset in batches.
 
+        Args:
+            source: Dataset source (local path or HF repo)
+            batch_size: Number of files to process in each batch
+            max_files: Maximum number of files to process (None for all)
+            callback: Optional function to process each file's data
+
+        Returns:
+            List of processed results (or raw bytes if no callback)
+        """
+        # Discover dataset
+        dataset = discover_dataset(source)
+        if not dataset:
+            return []
+
+        # Build list of all file requests
+        all_requests = []
+        for shard_idx in range(dataset.num_shards):
+            shard_info = dataset.get_shard_info(shard_idx)
+            num_files = shard_info.get("num_files", 0)
+
+            for file_idx in range(num_files):
+                all_requests.append((shard_idx, file_idx))
+
+                if max_files and len(all_requests) >= max_files:
