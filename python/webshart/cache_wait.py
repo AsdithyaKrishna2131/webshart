@@ -64,3 +64,18 @@ class ShardCacheMonitor:
 
         while True:
             status = self.dataloader.get_shard_cache_status(filename)
+
+            if status["is_cached"]:
+                yield {
+                    "downloaded": status["cur_filesize"],
+                    "total": status["cur_filesize"],
+                    "done": True,
+                }
+                break
+
+            yield {
+                "downloaded": status["cur_filesize"],
+                "total": status.get("total_size", 0),
+                "done": False,
+            }
+
