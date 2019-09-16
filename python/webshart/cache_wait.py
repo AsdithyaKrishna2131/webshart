@@ -33,3 +33,19 @@ def iter_with_cache_wait(loader, start_idx, end_idx):
                 and not loader.get_shard_cache_status(shard_info["name"])["is_cached"]
             ):
                 loader.prepare_next_shard()
+                time.sleep(0.2)
+            else:
+                break
+
+        try:
+            yield next(loader)
+        except StopIteration:
+            break
+
+
+class ShardCacheMonitor:
+    """Helper for monitoring shard cache downloads with async support."""
+
+    def __init__(self, dataloader):
+        self.dataloader = dataloader
+
