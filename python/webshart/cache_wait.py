@@ -49,3 +49,18 @@ class ShardCacheMonitor:
     def __init__(self, dataloader):
         self.dataloader = dataloader
 
+    async def wait_for_shard_async(self, filename, update_interval=0.1):
+        """
+        Async generator that yields download progress updates.
+
+        Usage:
+            async for progress in monitor.wait_for_shard_async('data-0000.tar'):
+                print(f"Downloaded: {progress['downloaded']} / {progress['total']}")
+        """
+        import asyncio
+
+        # Start the download
+        self.dataloader.prepare_shard_by_name(filename)
+
+        while True:
+            status = self.dataloader.get_shard_cache_status(filename)
