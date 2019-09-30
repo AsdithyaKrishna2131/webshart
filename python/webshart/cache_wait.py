@@ -79,3 +79,18 @@ class ShardCacheMonitor:
                 "done": False,
             }
 
+            await asyncio.sleep(update_interval)
+
+    def wait_for_next_shard(self, callback=None):
+        """
+        Synchronous helper that waits for the next shard with optional progress callback.
+        """
+        if not self.dataloader.will_block():
+            return
+
+        shard_info = self.dataloader.get_next_shard_info()
+        if not shard_info:
+            return
+
+        self.dataloader.prepare_next_shard()
+
