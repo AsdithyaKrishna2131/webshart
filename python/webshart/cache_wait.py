@@ -94,3 +94,19 @@ class ShardCacheMonitor:
 
         self.dataloader.prepare_next_shard()
 
+        last_size = 0
+        while self.dataloader.will_block():
+            status = self.dataloader.get_shard_cache_status(shard_info["name"])
+            current_size = status["cur_filesize"]
+
+            if current_size > last_size and callback:
+                callback(current_size - last_size, current_size)
+                last_size = current_size
+
+            time.sleep(0.1)
+
+
+import signal
+import sys
+
+
