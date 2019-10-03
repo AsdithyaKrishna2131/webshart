@@ -125,3 +125,18 @@ class CacheWaitContext:
     def _signal_handler(self, signum, frame):
         self._interrupted = True
         # Clean up progress bars
+        if self.cache_pbar is not None:
+            self.cache_pbar.close()
+        if self.pbar is not None:
+            self.pbar.close()
+        print("\nInterrupted! Cleaning up...")
+        sys.exit(0)
+
+    def __enter__(self):
+        # Install signal handler
+        self._original_sigint = signal.signal(signal.SIGINT, self._signal_handler)
+        return self
+
+    def __exit__(self, *args):
+        # Restore original signal handler
+        signal.signal(signal.SIGINT, self._original_sigint)
