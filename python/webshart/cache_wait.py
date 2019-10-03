@@ -140,3 +140,19 @@ class CacheWaitContext:
     def __exit__(self, *args):
         # Restore original signal handler
         signal.signal(signal.SIGINT, self._original_sigint)
+        if self.pbar is not None:
+            self.pbar.close()
+        if self.cache_pbar is not None:
+            self.cache_pbar.close()
+
+    def iterate(self):
+        """Iterate with automatic cache waiting and progress display."""
+        from tqdm import tqdm
+        import time
+
+        if self.progress_bar:
+            self.pbar = tqdm(desc="Processing files")
+
+        # Create manual iterator
+        data_iterator = iter(self.dataloader)
+
