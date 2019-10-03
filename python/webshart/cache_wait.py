@@ -110,3 +110,18 @@ import signal
 import sys
 
 
+class CacheWaitContext:
+    """Context manager that ensures shards are cached before iteration."""
+
+    def __init__(self, dataloader, lookahead=1, progress_bar=True):
+        self.dataloader = dataloader
+        self.lookahead = lookahead
+        self.progress_bar = progress_bar
+        self.pbar = None
+        self.cache_pbar = None
+        self._interrupted = False
+        self._original_sigint = None
+
+    def _signal_handler(self, signum, frame):
+        self._interrupted = True
+        # Clean up progress bars
