@@ -156,3 +156,18 @@ class CacheWaitContext:
         # Create manual iterator
         data_iterator = iter(self.dataloader)
 
+        while not self._interrupted:
+            # Check BEFORE trying to get next item
+            if self.dataloader.will_block():
+                shard_info = self.dataloader.get_next_shard_info()
+                if shard_info:
+                    # Start the download
+                    self.dataloader.prepare_next_shard()
+
+                    if self.progress_bar:
+                        self.cache_pbar = tqdm(
+                            desc=f"Caching {shard_info['name']}",
+                            unit="B",
+                            unit_scale=True,
+                            total=shard_info.get("size", 0),
+                        )
