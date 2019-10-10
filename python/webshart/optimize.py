@@ -95,3 +95,26 @@ def _require_hub():
         from huggingface_hub import (
             CommitOperationAdd,
             HfApi,
+            get_hf_file_metadata,
+            hf_hub_download,
+            hf_hub_url,
+        )
+    except ImportError as exc:
+        raise ImportError(
+            "Hub optimization requires huggingface-hub; install webshart[hub]"
+        ) from exc
+    return (
+        HfApi,
+        CommitOperationAdd,
+        hf_hub_download,
+        hf_hub_url,
+        get_hf_file_metadata,
+    )
+
+
+def _normalize_prefix(value: str) -> str:
+    value = value.strip("/")
+    if not value:
+        return ""
+    path = PurePosixPath(value)
+    if any(part in {"", ".", ".."} for part in path.parts):
