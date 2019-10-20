@@ -118,3 +118,26 @@ def _normalize_prefix(value: str) -> str:
         return ""
     path = PurePosixPath(value)
     if any(part in {"", ".", ".."} for part in path.parts):
+        raise ValueError(f"invalid repository path prefix: {value!r}")
+    return str(path)
+
+
+def _repo_path(prefix: str, filename: str) -> str:
+    return str(PurePosixPath(prefix, filename)) if prefix else filename
+
+
+def _normalize_extensions(extensions: Sequence[str]) -> tuple[str, ...]:
+    normalized = []
+    for extension in extensions:
+        extension = extension.strip().lower()
+        if not extension:
+            continue
+        normalized.append(extension if extension.startswith(".") else f".{extension}")
+    if not normalized:
+        raise ValueError("at least one payload extension is required")
+    return tuple(sorted(set(normalized)))
+
+
+def _relative_source_path(path: str, subfolder: str) -> Optional[str]:
+    source_path = PurePosixPath(path)
+    if source_path.is_absolute() or ".." in source_path.parts:
