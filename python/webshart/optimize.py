@@ -141,3 +141,27 @@ def _normalize_extensions(extensions: Sequence[str]) -> tuple[str, ...]:
 def _relative_source_path(path: str, subfolder: str) -> Optional[str]:
     source_path = PurePosixPath(path)
     if source_path.is_absolute() or ".." in source_path.parts:
+        raise ValueError(f"unsafe source path: {path!r}")
+    if not subfolder:
+        return str(source_path)
+    prefix = PurePosixPath(subfolder)
+    try:
+        return str(source_path.relative_to(prefix))
+    except ValueError:
+        return None
+
+
+def _list_local_files(source: Path, subfolder: str) -> list[SourceFile]:
+    root = source / Path(subfolder) if subfolder else source
+    if not root.is_dir():
+        raise ValueError(f"local source folder does not exist: {root}")
+    files = []
+    for path in root.rglob("*"):
+        if path.is_file():
+            relative = path.relative_to(root).as_posix()
+            files.append(SourceFile(relative, path.stat().st_size, path))
+    return files
+
+
+def _list_hub_files(
+    repo_id: str,
