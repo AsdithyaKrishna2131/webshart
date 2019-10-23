@@ -165,3 +165,26 @@ def _list_local_files(source: Path, subfolder: str) -> list[SourceFile]:
 
 def _list_hub_files(
     repo_id: str,
+    subfolder: str,
+    revision: str,
+    token: Optional[str],
+) -> tuple[list[SourceFile], str]:
+    HfApi, _, _, _, _ = _require_hub()
+    api = HfApi(token=token)
+    info = api.dataset_info(
+        repo_id,
+        revision=revision,
+        token=token,
+        files_metadata=False,
+    )
+    files = []
+    for entry in info.siblings or ():
+        relative = _relative_source_path(entry.rfilename, subfolder)
+        if relative is not None:
+            files.append(SourceFile(relative, -1))
+    return files, info.sha
+
+
+def _build_samples(
+    files: Sequence[SourceFile], payload_extensions: Sequence[str]
+) -> list[LooseSample]:
