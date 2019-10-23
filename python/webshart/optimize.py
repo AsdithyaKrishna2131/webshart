@@ -188,3 +188,26 @@ def _list_hub_files(
 def _build_samples(
     files: Sequence[SourceFile], payload_extensions: Sequence[str]
 ) -> list[LooseSample]:
+    sidecars: dict[str, SourceFile] = {}
+    for file in files:
+        path = PurePosixPath(file.path)
+        extension = path.suffix.lower()
+        if extension not in {".txt", ".json"}:
+            continue
+        stem = str(path.with_suffix(""))
+        existing = sidecars.get(stem)
+        if existing is None or extension == ".txt":
+            sidecars[stem] = file
+    payloads = [
+        file
+        for file in files
+        if PurePosixPath(file.path).suffix.lower() in payload_extensions
+    ]
+    samples = []
+    for payload in sorted(payloads, key=lambda file: file.path):
+        stem = str(PurePosixPath(payload.path).with_suffix(""))
+        sidecar = sidecars.get(stem)
+        samples.append(
+            LooseSample(
+                path=payload.path,
+                size=payload.size,
