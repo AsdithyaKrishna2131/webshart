@@ -211,3 +211,27 @@ def _build_samples(
             LooseSample(
                 path=payload.path,
                 size=payload.size,
+                payload=payload,
+                sidecar=sidecar,
+            )
+        )
+    return samples
+
+
+def _manifest_sha256(samples: Sequence[LooseSample]) -> str:
+    digest = sha256()
+    for sample in samples:
+        digest.update(sample.path.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(str(sample.size).encode("ascii"))
+        digest.update(b"\0")
+        if sample.sidecar is not None:
+            digest.update(sample.sidecar.path.encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(str(sample.sidecar.size).encode("ascii"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+def _file_manifest_sha256(files: Sequence[SourceFile]) -> str:
+    digest = sha256()
