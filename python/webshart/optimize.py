@@ -235,3 +235,26 @@ def _manifest_sha256(samples: Sequence[LooseSample]) -> str:
 
 def _file_manifest_sha256(files: Sequence[SourceFile]) -> str:
     digest = sha256()
+    for file in files:
+        digest.update(file.path.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(str(file.size).encode("ascii"))
+        digest.update(b"\n")
+    return digest.hexdigest()
+
+
+@contextmanager
+def _open_source_file(
+    file: SourceFile,
+    *,
+    source_repo: Optional[str],
+    source_subfolder: str,
+    source_revision: str,
+    token: Optional[str],
+    offset: int = 0,
+) -> Iterator[BinaryIO]:
+    if file.local_path is not None:
+        with file.local_path.open("rb") as handle:
+            if offset:
+                handle.seek(offset)
+            yield handle
