@@ -258,3 +258,27 @@ def _open_source_file(
             if offset:
                 handle.seek(offset)
             yield handle
+        return
+
+    if source_repo is None:
+        raise ValueError("remote source repository is missing")
+    _, _, _, hf_hub_url, _ = _require_hub()
+    remote_path = _repo_path(source_subfolder, file.path)
+    url = hf_hub_url(
+        source_repo,
+        remote_path,
+        repo_type="dataset",
+        revision=source_revision,
+    )
+    headers = {"Accept-Encoding": "identity", "User-Agent": "webshart/optimize-dataset"}
+    if token:
+        headers["Authorization"] = f"Bearer {token}"
+    if offset:
+        headers["Range"] = f"bytes={offset}-"
+    request = urllib.request.Request(url, headers=headers)
+    with urllib.request.urlopen(request) as response:
+        if offset and getattr(response, "status", None) != 206:
+            raise ValueError(
+                f"source server ignored the resume range for {file.path!r}"
+            )
+        yield response
