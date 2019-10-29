@@ -282,3 +282,26 @@ def _open_source_file(
                 f"source server ignored the resume range for {file.path!r}"
             )
         yield response
+
+
+def _source_file_size(
+    file: SourceFile,
+    *,
+    source_repo: Optional[str],
+    source_subfolder: str,
+    source_revision: str,
+    token: Optional[str],
+) -> int:
+    if file.size >= 0:
+        return file.size
+    if source_repo is None:
+        raise ValueError(f"source size is unavailable: {file.path}")
+    _, _, _, hf_hub_url, get_hf_file_metadata = _require_hub()
+    remote_path = _repo_path(source_subfolder, file.path)
+    url = hf_hub_url(
+        source_repo,
+        remote_path,
+        repo_type="dataset",
+        revision=source_revision,
+    )
+    metadata = get_hf_file_metadata(url, token=token)
