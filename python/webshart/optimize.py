@@ -305,3 +305,26 @@ def _source_file_size(
         revision=source_revision,
     )
     metadata = get_hf_file_metadata(url, token=token)
+    if metadata.size is None:
+        raise ValueError(f"Hub did not report a size for {remote_path}")
+    return int(metadata.size)
+
+
+def _read_small_file(
+    file: SourceFile,
+    *,
+    source_repo: Optional[str],
+    source_subfolder: str,
+    source_revision: str,
+    token: Optional[str],
+    max_bytes: int = 4 * 1024 * 1024,
+) -> bytes:
+    if file.size > max_bytes:
+        raise ValueError(f"caption sidecar exceeds {max_bytes} bytes: {file.path}")
+    with _open_source_file(
+        file,
+        source_repo=source_repo,
+        source_subfolder=source_subfolder,
+        source_revision=source_revision,
+        token=token,
+    ) as handle:
