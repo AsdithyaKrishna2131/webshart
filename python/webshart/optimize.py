@@ -352,3 +352,26 @@ def _normalize_caption(value: Any) -> Optional[CaptionValue]:
         return captions or None
     return None
 
+
+def _metadata_from_sidecar(
+    sidecar: Optional[SourceFile],
+    *,
+    source_repo: Optional[str],
+    source_subfolder: str,
+    source_revision: str,
+    token: Optional[str],
+) -> tuple[Optional[CaptionValue], Optional[dict[str, Any]]]:
+    if sidecar is None:
+        return None, None
+    data = _read_small_file(
+        sidecar,
+        source_repo=source_repo,
+        source_subfolder=source_subfolder,
+        source_revision=source_revision,
+        token=token,
+    )
+    if PurePosixPath(sidecar.path).suffix.lower() == ".txt":
+        return _normalize_caption(data.decode("utf-8")), None
+
+    value = json.loads(data)
+    if not isinstance(value, dict):
