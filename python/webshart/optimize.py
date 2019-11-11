@@ -328,3 +328,27 @@ def _read_small_file(
         source_revision=source_revision,
         token=token,
     ) as handle:
+        data = handle.read(max_bytes + 1)
+    if len(data) > max_bytes:
+        raise ValueError(f"caption sidecar exceeds {max_bytes} bytes: {file.path}")
+    return data
+
+
+def _normalize_caption(value: Any) -> Optional[CaptionValue]:
+    if isinstance(value, str):
+        value = value.strip()
+        return value or None
+    if isinstance(value, list):
+        captions = []
+        seen = set()
+        for item in value:
+            if isinstance(item, str):
+                item = item.strip()
+                if item and item not in seen:
+                    seen.add(item)
+                    captions.append(item)
+        if len(captions) == 1:
+            return captions[0]
+        return captions or None
+    return None
+
