@@ -375,3 +375,27 @@ def _metadata_from_sidecar(
 
     value = json.loads(data)
     if not isinstance(value, dict):
+        return None, None
+    captions = []
+    for key in CAPTION_KEYS:
+        caption = _normalize_caption(value.get(key))
+        if isinstance(caption, str):
+            captions.append(caption)
+        elif isinstance(caption, list):
+            captions.extend(caption)
+    return _normalize_caption(captions), value
+
+
+def _tar_member_size(payload_size: int) -> int:
+    return 512 + ((payload_size + 511) // 512) * 512
+
+
+def _add_to_tar(
+    archive: tarfile.TarFile,
+    sample: LooseSample,
+    payload_size: int,
+    *,
+    source_repo: Optional[str],
+    source_subfolder: str,
+    source_revision: str,
+    token: Optional[str],
