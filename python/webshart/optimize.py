@@ -422,3 +422,26 @@ def _normalized_tar_member_path(name: str) -> Optional[str]:
     path = PurePosixPath(name)
     if path.is_absolute() or ".." in path.parts:
         raise ValueError(f"unsafe path in source tar: {name!r}")
+    parts = [part for part in path.parts if part not in {"", "."}]
+    return str(PurePosixPath(*parts)) if parts else None
+
+
+def _filename_caption(path: str) -> Optional[str]:
+    caption = PurePosixPath(path).stem.replace("_", " ").strip()
+    return caption or None
+
+
+def _write_legacy_tar_shard(
+    tar_path: Path,
+    archives: Sequence[SourceFile],
+    state: OptimizationState,
+    *,
+    payload_extensions: Sequence[str],
+    max_shard_size_bytes: int,
+    source_repo: Optional[str],
+    source_subfolder: str,
+    source_revision: str,
+    token: Optional[str],
+    progress: Any,
+) -> tuple[int, dict[str, CaptionValue]]:
+    """Stream legacy tar members into one deterministic output shard."""
