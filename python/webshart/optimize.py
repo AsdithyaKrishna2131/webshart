@@ -399,3 +399,26 @@ def _add_to_tar(
     source_subfolder: str,
     source_revision: str,
     token: Optional[str],
+) -> None:
+    info = tarfile.TarInfo(sample.path)
+    info.size = payload_size
+    info.mode = 0o644
+    info.mtime = 0
+    info.uid = 0
+    info.gid = 0
+    info.uname = ""
+    info.gname = ""
+    with _open_source_file(
+        sample.payload,
+        source_repo=source_repo,
+        source_subfolder=source_subfolder,
+        source_revision=source_revision,
+        token=token,
+    ) as handle:
+        archive.addfile(info, handle)
+
+
+def _normalized_tar_member_path(name: str) -> Optional[str]:
+    path = PurePosixPath(name)
+    if path.is_absolute() or ".." in path.parts:
+        raise ValueError(f"unsafe path in source tar: {name!r}")
