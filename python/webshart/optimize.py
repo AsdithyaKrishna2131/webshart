@@ -492,3 +492,27 @@ def _write_legacy_tar_shard(
                         ):
                             state.next_source_member_offset = next_offset
                             continue
+
+                        member_size = _tar_member_size(member.size)
+                        if (
+                            shard_samples
+                            and shard_size + member_size > max_shard_size_bytes
+                        ):
+                            state.next_source_member_offset = member_offset
+                            shard_full = True
+                            break
+
+                        archive_prefix = str(
+                            PurePosixPath(source_archive.path).with_suffix("")
+                        )
+                        output_path = str(PurePosixPath(archive_prefix, member_path))
+                        info = tarfile.TarInfo(output_path)
+                        info.size = member.size
+                        info.mode = 0o644
+                        info.mtime = 0
+                        info.uid = 0
+                        info.gid = 0
+                        info.uname = ""
+                        info.gname = ""
+                        payload = source_tar.extractfile(member)
+                        if payload is None:
