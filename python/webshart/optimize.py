@@ -445,3 +445,27 @@ def _write_legacy_tar_shard(
     progress: Any,
 ) -> tuple[int, dict[str, CaptionValue]]:
     """Stream legacy tar members into one deterministic output shard."""
+    captions: dict[str, CaptionValue] = {}
+    shard_size = 1024
+    shard_samples = 0
+    shard_full = False
+
+    with tarfile.open(tar_path, mode="w", format=tarfile.PAX_FORMAT) as output:
+        while state.next_source_archive_index < len(archives) and not shard_full:
+            source_archive = archives[state.next_source_archive_index]
+            source_archive_size = _source_file_size(
+                source_archive,
+                source_repo=source_repo,
+                source_subfolder=source_subfolder,
+                source_revision=source_revision,
+                token=token,
+            )
+            base_offset = state.next_source_member_offset
+            with _open_source_file(
+                source_archive,
+                source_repo=source_repo,
+                source_subfolder=source_subfolder,
+                source_revision=source_revision,
+                token=token,
+                offset=base_offset,
+            ) as source_handle:
