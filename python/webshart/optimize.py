@@ -469,3 +469,26 @@ def _write_legacy_tar_shard(
                 token=token,
                 offset=base_offset,
             ) as source_handle:
+                with tarfile.open(fileobj=source_handle, mode="r|") as source_tar:
+                    for member in source_tar:
+                        member_offset = base_offset + member.offset
+                        next_offset = (
+                            base_offset
+                            + member.offset_data
+                            + ((member.size + 511) // 512) * 512
+                        )
+                        if next_offset > source_archive_size:
+                            progress.write(
+                                "Skipping truncated tail member "
+                                f"{member.name!r} in {source_archive.path!r}"
+                            )
+                            break
+                        member_path = _normalized_tar_member_path(member.name)
+                        if (
+                            not member.isfile()
+                            or member_path is None
+                            or PurePosixPath(member_path).suffix.lower()
+                            not in payload_extensions
+                        ):
+                            state.next_source_member_offset = next_offset
+                            continue
