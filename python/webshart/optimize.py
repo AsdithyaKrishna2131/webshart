@@ -539,3 +539,26 @@ def _write_legacy_tar_shard(
                 state.next_source_member_offset = 0
 
     return shard_samples, captions
+
+
+def _apply_sidecar_metadata(
+    metadata_path: Path,
+    captions: dict[str, CaptionValue],
+    json_metadata: dict[str, dict[str, Any]],
+) -> None:
+    metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
+    files = metadata.get("files")
+    if not isinstance(files, dict):
+        raise ValueError(f"invalid webshart metadata generated at {metadata_path}")
+    for path, caption in captions.items():
+        entry = files.get(path)
+        if isinstance(entry, dict):
+            entry.pop("caption", None)
+            entry["captions"] = caption
+    for path, value in json_metadata.items():
+        entry = files.get(path)
+        if isinstance(entry, dict):
+            entry["json_metadata"] = value
+    metadata_path.write_text(
+        json.dumps(metadata, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
