@@ -516,3 +516,26 @@ def _write_legacy_tar_shard(
                         info.gname = ""
                         payload = source_tar.extractfile(member)
                         if payload is None:
+                            raise ValueError(
+                                f"unable to read {member.name!r} from {source_archive.path!r}"
+                            )
+                        output.addfile(info, payload)
+
+                        caption = _filename_caption(member_path)
+                        if caption is not None:
+                            captions[output_path] = caption
+                            state.captioned_samples += 1
+                        else:
+                            state.uncaptioned_samples += 1
+                        state.next_sample_index += 1
+                        state.bytes_sharded += member.size
+                        state.next_source_member_offset = next_offset
+                        shard_size += member_size
+                        shard_samples += 1
+                        progress.update(1)
+
+            if not shard_full:
+                state.next_source_archive_index += 1
+                state.next_source_member_offset = 0
+
+    return shard_samples, captions
