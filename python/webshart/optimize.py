@@ -586,3 +586,26 @@ def _load_hub_state(
     token: Optional[str],
 ) -> Optional[OptimizationState]:
     _, _, hf_hub_download, _, _ = _require_hub()
+    if not _hub_file_exists(
+        api,
+        repo_id,
+        state_repo_path,
+        revision=revision,
+        token=token,
+    ):
+        return None
+    state_path = hf_hub_download(
+        repo_id,
+        state_repo_path,
+        repo_type="dataset",
+        revision=revision,
+        token=token,
+    )
+    return _load_local_state(Path(state_path))
+
+
+def _hub_file_exists(
+    api: Any,
+    repo_id: str,
+    path: str,
+    *,
