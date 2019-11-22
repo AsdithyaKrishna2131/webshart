@@ -562,3 +562,27 @@ def _apply_sidecar_metadata(
     metadata_path.write_text(
         json.dumps(metadata, ensure_ascii=False, separators=(",", ":")),
         encoding="utf-8",
+    )
+
+
+def _write_state(path: Path, state: OptimizationState) -> None:
+    path.write_text(
+        json.dumps(asdict(state), ensure_ascii=False, indent=2, sort_keys=True),
+        encoding="utf-8",
+    )
+
+
+def _load_local_state(path: Path) -> Optional[OptimizationState]:
+    if not path.is_file():
+        return None
+    return OptimizationState(**json.loads(path.read_text(encoding="utf-8")))
+
+
+def _load_hub_state(
+    api: Any,
+    repo_id: str,
+    state_repo_path: str,
+    revision: str,
+    token: Optional[str],
+) -> Optional[OptimizationState]:
+    _, _, hf_hub_download, _, _ = _require_hub()
