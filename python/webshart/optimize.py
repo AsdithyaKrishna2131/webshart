@@ -609,3 +609,27 @@ def _hub_file_exists(
     repo_id: str,
     path: str,
     *,
+    revision: str,
+    token: Optional[str],
+) -> bool:
+    try:
+        return api.file_exists(
+            repo_id,
+            path,
+            repo_type="dataset",
+            revision=revision,
+            token=token,
+        )
+    except Exception as exc:
+        response = getattr(exc, "response", None)
+        if getattr(response, "status_code", None) == 404:
+            return False
+        raise
+
+
+def _validate_resume_state(
+    state: OptimizationState,
+    expected: OptimizationState,
+) -> None:
+    immutable_fields = (
+        "schema_version",
