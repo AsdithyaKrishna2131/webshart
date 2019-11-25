@@ -750,3 +750,26 @@ def optimize_dataset(
         input_layout=input_layout,
     )
 
+    destination_path = (
+        Path(destination).expanduser() if destination is not None else None
+    )
+    local_state_path = (
+        destination_path / output_prefix / STATE_FILENAME
+        if destination_path is not None
+        else None
+    )
+    state_repo_path = _repo_path(output_prefix, STATE_FILENAME)
+    api = None
+    CommitOperationAdd = None
+    if push_to_hub:
+        HfApi, CommitOperationAdd, _, _, _ = _require_hub()
+        api = HfApi(token=token)
+        api.create_repo(
+            push_to_hub,
+            repo_type="dataset",
+            private=private,
+            exist_ok=True,
+            token=token,
+        )
+        state = _load_hub_state(
+            api,
