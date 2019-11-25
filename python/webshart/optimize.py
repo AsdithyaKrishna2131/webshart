@@ -633,3 +633,26 @@ def _validate_resume_state(
 ) -> None:
     immutable_fields = (
         "schema_version",
+        "source",
+        "manifest_sha256",
+        "output_prefix",
+        "max_shard_size_bytes",
+        "payload_extensions",
+        "total_samples",
+        "input_layout",
+    )
+    changed = [
+        field
+        for field in immutable_fields
+        if getattr(state, field) != getattr(expected, field)
+    ]
+    if changed:
+        raise ValueError(
+            "optimization state does not match this source/configuration; "
+            f"changed fields: {', '.join(changed)}"
+        )
+    if state.status not in {"running", "complete"}:
+        raise ValueError(f"invalid optimization state status: {state.status!r}")
+    if state.next_sample_index < 0 or (
+        state.input_layout == "loose" and state.next_sample_index > state.total_samples
+    ):
