@@ -703,3 +703,26 @@ def optimize_dataset(
     source_path = Path(source).expanduser()
     is_local = source_path.is_dir()
     source_repo = None if is_local else str(source)
+
+    if is_local:
+        files = _list_local_files(source_path, source_subfolder)
+        source_identity = {"kind": "local", "subfolder": source_subfolder}
+    else:
+        files, source_sha = _list_hub_files(
+            source_repo,
+            source_subfolder,
+            source_revision,
+            token,
+        )
+        source_identity = {
+            "kind": "hub",
+            "repo_id": source_repo,
+            "revision": source_revision,
+            "snapshot_sha": source_sha,
+            "subfolder": source_subfolder,
+        }
+
+    samples = _build_samples(files, extensions)
+    source_archives = sorted(
+        (file for file in files if PurePosixPath(file.path).suffix.lower() == ".tar"),
+        key=lambda file: file.path,
