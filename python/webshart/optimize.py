@@ -679,3 +679,27 @@ def optimize_dataset(
     hf_token: Optional[str] = None,
     max_shard_size_bytes: int = 1024**3,
     payload_extensions: Sequence[str] = DEFAULT_PAYLOAD_EXTENSIONS,
+    include_image_geometry: bool = True,
+    max_shards: Optional[int] = None,
+    private: Optional[bool] = None,
+) -> dict[str, Any]:
+    """Convert loose files or legacy tar archives into resumable webshart shards.
+
+    When ``push_to_hub`` is set, each completed tar/index pair and the resume
+    state are committed atomically to that dataset repository. Without a local
+    destination, only one shard is retained on disk at a time.
+    """
+    if destination is None and push_to_hub is None:
+        raise ValueError("destination or push_to_hub is required")
+    if max_shard_size_bytes <= 0:
+        raise ValueError("max_shard_size_bytes must be greater than zero")
+    if max_shards is not None and max_shards <= 0:
+        raise ValueError("max_shards must be greater than zero")
+
+    token = hf_token or os.environ.get("HF_TOKEN")
+    extensions = _normalize_extensions(payload_extensions)
+    source_subfolder = _normalize_prefix(source_subfolder)
+    output_prefix = _normalize_prefix(output_prefix)
+    source_path = Path(source).expanduser()
+    is_local = source_path.is_dir()
+    source_repo = None if is_local else str(source)
