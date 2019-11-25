@@ -656,3 +656,26 @@ def _validate_resume_state(
     if state.next_sample_index < 0 or (
         state.input_layout == "loose" and state.next_sample_index > state.total_samples
     ):
+        raise ValueError("optimization state sample position is out of range")
+    if state.next_shard_index < 0 or state.bytes_sharded < 0:
+        raise ValueError("optimization state contains negative counters")
+    if state.captioned_samples + state.uncaptioned_samples != state.next_sample_index:
+        raise ValueError(
+            "optimization state caption counters do not match its position"
+        )
+    if state.next_source_archive_index < 0 or state.next_source_member_offset < 0:
+        raise ValueError("optimization state source position is out of range")
+
+
+def optimize_dataset(
+    source: Union[str, Path],
+    *,
+    destination: Optional[Union[str, Path]] = None,
+    push_to_hub: Optional[str] = None,
+    source_subfolder: str = "",
+    output_prefix: str = "webshart",
+    source_revision: str = "main",
+    target_revision: str = "main",
+    hf_token: Optional[str] = None,
+    max_shard_size_bytes: int = 1024**3,
+    payload_extensions: Sequence[str] = DEFAULT_PAYLOAD_EXTENSIONS,
