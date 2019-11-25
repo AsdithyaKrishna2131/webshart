@@ -726,3 +726,27 @@ def optimize_dataset(
     source_archives = sorted(
         (file for file in files if PurePosixPath(file.path).suffix.lower() == ".tar"),
         key=lambda file: file.path,
+    )
+    input_layout = "loose" if samples else "legacy_tar" if source_archives else None
+    if input_layout is None:
+        raise ValueError(
+            "no loose payload files or legacy tar archives matched: "
+            + ", ".join(extensions)
+        )
+
+    expected_state = OptimizationState(
+        schema_version=STATE_SCHEMA_VERSION,
+        status="running",
+        source=source_identity,
+        manifest_sha256=(
+            _manifest_sha256(samples)
+            if input_layout == "loose"
+            else _file_manifest_sha256(source_archives)
+        ),
+        output_prefix=output_prefix,
+        max_shard_size_bytes=max_shard_size_bytes,
+        payload_extensions=list(extensions),
+        total_samples=len(samples) if input_layout == "loose" else 0,
+        input_layout=input_layout,
+    )
+
