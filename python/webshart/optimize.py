@@ -773,3 +773,26 @@ def optimize_dataset(
         )
         state = _load_hub_state(
             api,
+            push_to_hub,
+            state_repo_path,
+            target_revision,
+            token,
+        )
+        if state is None and (
+            _hub_file_exists(
+                api,
+                push_to_hub,
+                _repo_path(output_prefix, "shard-00000.tar"),
+                revision=target_revision,
+                token=token,
+            )
+            or _hub_file_exists(
+                api,
+                push_to_hub,
+                _repo_path(output_prefix, "shard-00000.json"),
+                revision=target_revision,
+                token=token,
+            )
+        ):
+            raise ValueError(
+                "optimized shards exist at the target but the resume state is missing; "
