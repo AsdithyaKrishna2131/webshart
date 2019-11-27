@@ -843,3 +843,27 @@ def optimize_dataset(
                 if max_shards is not None and shards_created >= max_shards:
                     break
 
+                shard_name = f"shard-{state.next_shard_index:05d}"
+                tar_path = staging / f"{shard_name}.tar"
+                metadata_path = staging / f"{shard_name}.json"
+                state_path = staging / STATE_FILENAME
+                captions: dict[str, CaptionValue] = {}
+                json_metadata: dict[str, dict[str, Any]] = {}
+                shard_size = 1024
+                shard_samples = 0
+                start_index = state.next_sample_index
+
+                if input_layout == "legacy_tar":
+                    shard_samples, captions = _write_legacy_tar_shard(
+                        tar_path,
+                        source_archives,
+                        state,
+                        payload_extensions=extensions,
+                        max_shard_size_bytes=max_shard_size_bytes,
+                        source_repo=source_repo,
+                        source_subfolder=source_subfolder,
+                        source_revision=source_revision,
+                        token=token,
+                        progress=progress,
+                    )
+                else:
