@@ -820,3 +820,26 @@ def optimize_dataset(
 
     if destination_path is not None:
         (destination_path / output_prefix).mkdir(parents=True, exist_ok=True)
+
+    shards_created = 0
+    resumed = state.next_sample_index > 0
+    with TemporaryDirectory(prefix="webshart-optimize-") as temporary:
+        staging = Path(temporary)
+        extractor = MetadataExtractor(hf_token=token)
+        progress = tqdm(
+            total=len(samples) if input_layout == "loose" else None,
+            initial=state.next_sample_index,
+            unit="sample",
+            desc="Optimizing dataset",
+        )
+
+        try:
+            conversion_complete = (
+                state.next_sample_index >= len(samples)
+                if input_layout == "loose"
+                else state.next_source_archive_index >= len(source_archives)
+            )
+            while not conversion_complete:
+                if max_shards is not None and shards_created >= max_shards:
+                    break
+
