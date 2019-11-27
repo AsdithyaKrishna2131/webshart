@@ -796,3 +796,27 @@ def optimize_dataset(
         ):
             raise ValueError(
                 "optimized shards exist at the target but the resume state is missing; "
+                "restore the state or choose a different output_prefix"
+            )
+    else:
+        state = _load_local_state(local_state_path) if local_state_path else None
+        output_dir = destination_path / output_prefix
+        if state is None and (
+            (output_dir / "shard-00000.tar").exists()
+            or (output_dir / "shard-00000.json").exists()
+        ):
+            raise ValueError(
+                "optimized shards exist at the destination but the resume state is missing; "
+                "restore the state or choose a different destination/output_prefix"
+            )
+
+    if state is not None:
+        _validate_resume_state(state, expected_state)
+    else:
+        state = expected_state
+
+    if state.status == "complete":
+        return {**asdict(state), "shards_created": 0, "resumed": True}
+
+    if destination_path is not None:
+        (destination_path / output_prefix).mkdir(parents=True, exist_ok=True)
