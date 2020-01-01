@@ -10,3 +10,8 @@ import pytest
 PENDING_HF_HUB = [
     "test_dataset_streaming.py::TestTarDataLoader::test_shard_switch_by_filename",
     "test_metadata.py::test_paired_json_sidecar_metadata_and_retrieval",
+    "test_metadata.py::test_txt_caption_probe_retrieval_and_metadata_export",
+    "test_metadata.py::test_caption_coalescing_can_persist_to_metadata_cache",
+    "test_metadata.py::test_txt_payload_with_json_sidecar_remains_a_logical_sample",
+    "test_metadata_caching.py::TestMetadataCachingPythonAPI::test_cache_stats_accuracy",
+    "test_metadata_caching.py::TestMetadataCachingPythonAPI::test_preload_on_enable",
