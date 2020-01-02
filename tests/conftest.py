@@ -15,3 +15,7 @@ PENDING_HF_HUB = [
     "test_metadata.py::test_txt_payload_with_json_sidecar_remains_a_logical_sample",
     "test_metadata_caching.py::TestMetadataCachingPythonAPI::test_cache_stats_accuracy",
     "test_metadata_caching.py::TestMetadataCachingPythonAPI::test_preload_on_enable",
+    "test_metadata_caching.py::TestMetadataCachingPythonAPI::test_clear_cache",
+    "test_metadata_caching.py::TestMetadataCachingPythonAPI::test_init_shard_count_variations[0-0]",
+    "test_metadata_caching.py::TestMetadataCachingPythonAPI::test_init_shard_count_variations[3-3]",
+    "test_nonblocking_ctx_dataloader.py::test_cache_wait_download_progress",
