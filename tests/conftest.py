@@ -19,3 +19,8 @@ PENDING_HF_HUB = [
     "test_metadata_caching.py::TestMetadataCachingPythonAPI::test_init_shard_count_variations[0-0]",
     "test_metadata_caching.py::TestMetadataCachingPythonAPI::test_init_shard_count_variations[3-3]",
     "test_nonblocking_ctx_dataloader.py::test_cache_wait_download_progress",
+    "test_optimize_dataset.py::test_optimize_dataset_repackages_legacy_tars_and_resumes",
+    "test_optimize_dataset.py::test_optimize_dataset_skips_truncated_legacy_tar_tail",
+    "test_optimize_dataset.py::test_optimize_dataset_shards_embeds_captions_and_resumes_locally",
+    "test_optimize_dataset.py::test_optimize_dataset_uploads_each_shard_with_resume_state",
+    "test_optimize_dataset.py::test_optimize_dataset_rejects_changed_manifest_on_resume",
