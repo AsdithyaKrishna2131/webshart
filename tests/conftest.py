@@ -24,3 +24,7 @@ PENDING_HF_HUB = [
     "test_optimize_dataset.py::test_optimize_dataset_shards_embeds_captions_and_resumes_locally",
     "test_optimize_dataset.py::test_optimize_dataset_uploads_each_shard_with_resume_state",
     "test_optimize_dataset.py::test_optimize_dataset_rejects_changed_manifest_on_resume",
+    "test_optimize_dataset.py::test_optimize_dataset_coalesces_json_sidecar_metadata",
+]
+
+
