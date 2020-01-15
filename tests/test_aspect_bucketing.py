@@ -32,3 +32,20 @@ def mock_loader_factory():
         loader = Mock(spec=TarDataLoader)
         type(loader).num_shards = PropertyMock(return_value=num_shards)
         loader.list_shard_aspect_buckets = Mock()
+        loader.list_all_aspect_buckets = Mock()
+        return loader
+
+    return _create_loader
+
+
+class TestAspectBucketing:
+    """Test suite for aspect bucketing functionality."""
+
+    def test_list_shard_aspect_buckets_default(self, mock_loader_factory):
+        """Test basic aspect bucketing with default parameters."""
+        loader = mock_loader_factory()
+
+        # Set up the expected return value
+        loader.list_shard_aspect_buckets.return_value = [
+            {
+                "shard_idx": 0,
