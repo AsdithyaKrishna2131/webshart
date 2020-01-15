@@ -49,3 +49,21 @@ class TestAspectBucketing:
         loader.list_shard_aspect_buckets.return_value = [
             {
                 "shard_idx": 0,
+                "shard_name": "shard-00000.tar",
+                "buckets": {
+                    "1.778": [
+                        {
+                            "filename": "image1.jpg",
+                            "width": 1920,
+                            "height": 1080,
+                            "aspect": 1.778,
+                        },
+                        {
+                            "filename": "image3.jpg",
+                            "width": 1920,
+                            "height": 1080,
+                            "aspect": 1.778,
+                        },
+                    ],
+                    "0.563": [
+                        {
