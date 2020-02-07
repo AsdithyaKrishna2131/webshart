@@ -84,3 +84,21 @@ class TestAspectBucketing:
         assert "1.778" in buckets[0]["buckets"]
         assert len(buckets[0]["buckets"]["1.778"]) == 2
         assert "0.563" in buckets[0]["buckets"]
+        assert len(buckets[0]["buckets"]["0.563"]) == 1
+
+        # Verify the method was called correctly
+        loader.list_shard_aspect_buckets.assert_called_once_with([0])
+
+    def test_list_shard_aspect_buckets_geometry_tuple(self, mock_loader_factory):
+        """Test bucketing with geometry-tuple key type."""
+        loader = mock_loader_factory()
+
+        loader.list_shard_aspect_buckets.return_value = [
+            {
+                "shard_idx": 0,
+                "shard_name": "shard-00000.tar",
+                "buckets": {
+                    "(1920, 1080)": [
+                        {"filename": "image1.jpg", "width": 1920, "height": 1080}
+                    ],
+                    "(1080, 1920)": [
