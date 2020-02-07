@@ -102,3 +102,20 @@ class TestAspectBucketing:
                         {"filename": "image1.jpg", "width": 1920, "height": 1080}
                     ],
                     "(1080, 1920)": [
+                        {"filename": "image2.jpg", "width": 1080, "height": 1920}
+                    ],
+                },
+            }
+        ]
+
+        buckets = loader.list_shard_aspect_buckets([0], key="geometry-tuple")
+
+        assert "(1920, 1080)" in buckets[0]["buckets"]
+        assert "(1080, 1920)" in buckets[0]["buckets"]
+
+        loader.list_shard_aspect_buckets.assert_called_once_with(
+            [0], key="geometry-tuple"
+        )
+
+    def test_list_shard_aspect_buckets_geometry_list(self, mock_loader_factory):
+        """Test bucketing with geometry-list key type."""
