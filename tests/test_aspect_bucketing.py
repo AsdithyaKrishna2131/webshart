@@ -67,3 +67,20 @@ class TestAspectBucketing:
                     ],
                     "0.563": [
                         {
+                            "filename": "image2.jpg",
+                            "width": 1080,
+                            "height": 1920,
+                            "aspect": 0.563,
+                        }
+                    ],
+                },
+            }
+        ]
+
+        buckets = loader.list_shard_aspect_buckets([0])
+
+        assert len(buckets) == 1
+        assert buckets[0]["shard_idx"] == 0
+        assert "1.778" in buckets[0]["buckets"]
+        assert len(buckets[0]["buckets"]["1.778"]) == 2
+        assert "0.563" in buckets[0]["buckets"]
