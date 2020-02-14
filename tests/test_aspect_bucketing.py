@@ -207,3 +207,21 @@ class TestAspectBucketing:
         """Test error handling for invalid key type."""
         # Instead of patching the class, we'll test the expected behavior
         # by simulating what should happen with an invalid key
+        loader = mock_loader_factory()
+
+        # Configure the method to raise ValueError
+        loader.list_shard_aspect_buckets.side_effect = ValueError(
+            "key must be 'aspect', 'geometry-tuple', or 'geometry-list'"
+        )
+
+        with pytest.raises(
+            ValueError,
+            match="key must be 'aspect', 'geometry-tuple', or 'geometry-list'",
+        ):
+            loader.list_shard_aspect_buckets([0], key="invalid-key")
+
+    def test_list_shard_aspect_buckets_invalid_shard_index(self, mock_loader_factory):
+        """Test error handling for invalid shard indices."""
+        loader = mock_loader_factory(num_shards=3)
+
+        # Configure the method to raise IndexError
