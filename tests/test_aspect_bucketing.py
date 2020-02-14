@@ -154,3 +154,21 @@ class TestAspectBucketing:
                 "shard_name": "shard-00000.tar",
                 "buckets": {
                     "(1024, 576)": [
+                        {"filename": "image1.jpg", "width": 1920, "height": 1080}
+                    ],
+                    "(576, 1024)": [
+                        {"filename": "image2.jpg", "width": 1080, "height": 1920}
+                    ],
+                },
+            }
+        ]
+
+        buckets = loader.list_shard_aspect_buckets(
+            [0], key="geometry-tuple", target_pixel_area=1024**2
+        )
+
+        assert "(1024, 576)" in buckets[0]["buckets"]
+        assert "(576, 1024)" in buckets[0]["buckets"]
+
+        loader.list_shard_aspect_buckets.assert_called_once_with(
+            [0], key="geometry-tuple", target_pixel_area=1024**2
