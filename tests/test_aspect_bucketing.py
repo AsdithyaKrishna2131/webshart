@@ -189,3 +189,21 @@ class TestAspectBucketing:
                 "shard_name": "shard-00001.tar",
                 "buckets": {"0.563": [{"filename": "image2.jpg"}]},
             },
+            {
+                "shard_idx": 2,
+                "shard_name": "shard-00002.tar",
+                "buckets": {"1.333": [{"filename": "image3.jpg"}]},
+            },
+        ]
+
+        buckets = loader.list_shard_aspect_buckets([0, 1, 2])
+
+        assert len(buckets) == 3
+        assert buckets[0]["shard_idx"] == 0
+        assert buckets[1]["shard_idx"] == 1
+        assert buckets[2]["shard_idx"] == 2
+
+    def test_list_shard_aspect_buckets_invalid_key(self, mock_loader_factory):
+        """Test error handling for invalid key type."""
+        # Instead of patching the class, we'll test the expected behavior
+        # by simulating what should happen with an invalid key
