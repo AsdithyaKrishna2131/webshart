@@ -137,3 +137,20 @@ class TestAspectBucketing:
         ]
 
         buckets = loader.list_shard_aspect_buckets([0], key="geometry-list")
+
+        assert "[1920, 1080]" in buckets[0]["buckets"]
+        assert "[1080, 1920]" in buckets[0]["buckets"]
+
+    def test_list_shard_aspect_buckets_with_target_pixel_area(
+        self, mock_loader_factory
+    ):
+        """Test bucketing with target pixel area scaling."""
+        loader = mock_loader_factory()
+
+        # When target_pixel_area=1024, a 1920x1080 image scales to 1024x576
+        loader.list_shard_aspect_buckets.return_value = [
+            {
+                "shard_idx": 0,
+                "shard_name": "shard-00000.tar",
+                "buckets": {
+                    "(1024, 576)": [
