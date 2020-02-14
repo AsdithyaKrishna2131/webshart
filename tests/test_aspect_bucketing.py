@@ -225,3 +225,20 @@ class TestAspectBucketing:
         loader = mock_loader_factory(num_shards=3)
 
         # Configure the method to raise IndexError
+        loader.list_shard_aspect_buckets.side_effect = IndexError(
+            "Shard index 5 out of range"
+        )
+
+        with pytest.raises(IndexError):
+            loader.list_shard_aspect_buckets([5])
+
+    def test_list_all_aspect_buckets_generator(self, mock_loader_factory):
+        """Test the generator that yields buckets for all shards."""
+        loader = mock_loader_factory(num_shards=3)
+
+        # Create a generator that yields buckets
+        def bucket_generator():
+            for i in range(3):
+                yield {
+                    "shard_idx": i,
+                    "shard_name": f"shard-{i:05d}.tar",
