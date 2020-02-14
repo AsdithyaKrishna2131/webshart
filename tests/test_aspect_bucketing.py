@@ -172,3 +172,20 @@ class TestAspectBucketing:
 
         loader.list_shard_aspect_buckets.assert_called_once_with(
             [0], key="geometry-tuple", target_pixel_area=1024**2
+        )
+
+    def test_list_shard_aspect_buckets_multiple_shards(self, mock_loader_factory):
+        """Test bucketing across multiple shards."""
+        loader = mock_loader_factory()
+
+        loader.list_shard_aspect_buckets.return_value = [
+            {
+                "shard_idx": 0,
+                "shard_name": "shard-00000.tar",
+                "buckets": {"1.778": [{"filename": "image1.jpg"}]},
+            },
+            {
+                "shard_idx": 1,
+                "shard_name": "shard-00001.tar",
+                "buckets": {"0.563": [{"filename": "image2.jpg"}]},
+            },
