@@ -242,3 +242,21 @@ class TestAspectBucketing:
                 yield {
                     "shard_idx": i,
                     "shard_name": f"shard-{i:05d}.tar",
+                    "buckets": {"1.778": [{"filename": f"image{i}.jpg"}]},
+                }
+
+        loader.list_all_aspect_buckets.return_value = bucket_generator()
+
+        # Collect all results from the generator
+        all_buckets = list(loader.list_all_aspect_buckets())
+
+        assert len(all_buckets) == 3
+        for i, bucket in enumerate(all_buckets):
+            assert bucket["shard_idx"] == i
+
+    def test_list_all_aspect_buckets_with_parameters(self, mock_loader_factory):
+        """Test the generator with custom key and target resolution."""
+        loader = mock_loader_factory(num_shards=1)
+
+        # Create a generator
+        def bucket_generator():
