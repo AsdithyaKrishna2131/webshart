@@ -260,3 +260,20 @@ class TestAspectBucketing:
 
         # Create a generator
         def bucket_generator():
+            yield {
+                "shard_idx": 0,
+                "shard_name": "shard-00000.tar",
+                "buckets": {"(512, 512)": [{"filename": "image1.jpg"}]},
+            }
+
+        loader.list_all_aspect_buckets.return_value = bucket_generator()
+
+        buckets = list(
+            loader.list_all_aspect_buckets(
+                key="geometry-tuple", target_pixel_area=512**2
+            )
+        )
+
+        # Verify the parameters were passed correctly
+        loader.list_all_aspect_buckets.assert_called_with(
+            key="geometry-tuple", target_pixel_area=512**2
