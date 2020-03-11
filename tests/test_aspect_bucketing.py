@@ -277,3 +277,21 @@ class TestAspectBucketing:
         # Verify the parameters were passed correctly
         loader.list_all_aspect_buckets.assert_called_with(
             key="geometry-tuple", target_pixel_area=512**2
+        )
+
+    def test_empty_shard_no_images(self, mock_loader_factory):
+        """Test handling of shards with no image files."""
+        loader = mock_loader_factory()
+
+        loader.list_shard_aspect_buckets.return_value = [
+            {
+                "shard_idx": 0,
+                "shard_name": "shard-00000.tar",
+                "buckets": {},  # No images with geometry
+            }
+        ]
+
+        buckets = loader.list_shard_aspect_buckets([0])
+
+        assert len(buckets) == 1
+        assert len(buckets[0]["buckets"]) == 0
