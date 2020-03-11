@@ -39,3 +39,22 @@ class TestBucketDataLoader:
             return info
 
         return _create_file_info
+
+    @pytest.fixture
+    def temp_dataset(self, tmp_path):
+        """Create a temporary local dataset structure"""
+        # Create tar files
+        (tmp_path / "shard1.tar").write_bytes(b"dummy tar content")
+        (tmp_path / "shard2.tar").write_bytes(b"dummy tar content")
+
+        # Create metadata files
+        metadata1 = {
+            "filesize": 1000,
+            "files": {
+                "image1.jpg": {
+                    "offset": 0,
+                    "length": 100,
+                    "width": 1920,
+                    "height": 1080,
+                },
+                "image2.jpg": {
