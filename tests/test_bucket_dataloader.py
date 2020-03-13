@@ -58,3 +58,22 @@ class TestBucketDataLoader:
                     "height": 1080,
                 },
                 "image2.jpg": {
+                    "offset": 100,
+                    "length": 100,
+                    "width": 1280,
+                    "height": 720,
+                },
+                "image3.jpg": {
+                    "offset": 200,
+                    "length": 100,
+                    "width": 800,
+                    "height": 600,
+                },
+            },
+        }
+
+        metadata2 = {
+            "filesize": 1000,
+            "files": {
+                "image4.jpg": {
+                    "offset": 0,
