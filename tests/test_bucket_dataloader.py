@@ -77,3 +77,22 @@ class TestBucketDataLoader:
             "files": {
                 "image4.jpg": {
                     "offset": 0,
+                    "length": 100,
+                    "width": 1920,
+                    "height": 1080,
+                },
+                "image5.jpg": {
+                    "offset": 100,
+                    "length": 100,
+                    "width": 3840,
+                    "height": 2160,
+                },
+                "image6.jpg": {
+                    "offset": 200,
+                    "length": 100,
+                    "width": 1024,
+                    "height": 1024,
+                },
+            },
+        }
+
