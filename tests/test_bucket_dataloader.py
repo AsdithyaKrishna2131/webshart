@@ -135,3 +135,22 @@ class TestBucketDataLoader:
         """Test initialization with a path string"""
         # Mock the discovery process
         mock_discovered = Mock()
+        mock_discovered.name = temp_dataset
+        mock_discovered.metadata_source = None
+        mock_discovery_instance = Mock()
+        mock_discovery_instance.discover_local = Mock(return_value=mock_discovered)
+        MockDiscovery.return_value = mock_discovery_instance
+
+        # Create a mock loader instance
+        mock_instance = Mock()
+        mock_instance.key_type = "geometry-tuple"
+        mock_instance.target_pixel_area = 1024 * 1024
+        mock_sampling_strategy = Mock(name="RandomWithinBuckets")
+        mock_instance.sampling_strategy = mock_sampling_strategy
+        MockBucketDataLoader.return_value = mock_instance
+
+        # Import and create loader
+        from webshart import BucketDataLoader
+
+        loader = BucketDataLoader(
+            dataset_or_path=temp_dataset,
