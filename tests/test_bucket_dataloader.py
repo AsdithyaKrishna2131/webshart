@@ -154,3 +154,22 @@ class TestBucketDataLoader:
 
         loader = BucketDataLoader(
             dataset_or_path=temp_dataset,
+            key="geometry-tuple",
+            target_pixel_area=1024 * 1024,
+            sampling_strategy="random_within_buckets",
+        )
+
+        assert loader.key_type == "geometry-tuple"
+        assert loader.target_pixel_area == 1024 * 1024
+        assert loader.sampling_strategy.name == mock_sampling_strategy.name
+
+    @patch("webshart.BucketDataLoader")
+    def test_invalid_key_type(self, MockBucketDataLoader, mock_dataset):
+        """Test initialization with invalid key type"""
+        MockBucketDataLoader.side_effect = ValueError(
+            "key must be 'aspect', 'geometry-tuple', or 'geometry-list'"
+        )
+
+        from webshart import BucketDataLoader
+
+        with pytest.raises(ValueError, match="key must be"):
