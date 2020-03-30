@@ -96,3 +96,22 @@ class TestBucketDataLoader:
             },
         }
 
+        (tmp_path / "shard1.json").write_text(json.dumps(metadata1))
+        (tmp_path / "shard2.json").write_text(json.dumps(metadata2))
+
+        return str(tmp_path)
+
+    @patch("webshart.BucketDataLoader")
+    def test_initialization_with_dataset(self, MockBucketDataLoader, mock_dataset):
+        """Test initialization with a DiscoveredDataset"""
+        # Create a mock instance
+        mock_instance = Mock()
+        mock_instance.key_type = "aspect"
+        mock_sampling_strategy = Mock(name="Sequential")
+        mock_instance.sampling_strategy = mock_sampling_strategy
+        mock_instance.load_file_data = True
+        mock_instance.max_file_size = 50_000_000
+        mock_instance.chunk_size_mb = 10
+        MockBucketDataLoader.return_value = mock_instance
+
+        # Import and create loader
