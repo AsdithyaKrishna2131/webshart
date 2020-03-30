@@ -115,3 +115,23 @@ class TestBucketDataLoader:
         MockBucketDataLoader.return_value = mock_instance
 
         # Import and create loader
+        from webshart import BucketDataLoader
+
+        loader = BucketDataLoader(
+            dataset_or_path=mock_dataset, key="aspect", sampling_strategy="sequential"
+        )
+
+        assert loader.key_type == "aspect"
+        assert loader.sampling_strategy.name == mock_sampling_strategy.name
+        assert loader.load_file_data is True
+        assert loader.max_file_size == 50_000_000
+        assert loader.chunk_size_mb == 10
+
+    @patch("webshart.DatasetDiscovery")
+    @patch("webshart.BucketDataLoader")
+    def test_initialization_with_path(
+        self, MockBucketDataLoader, MockDiscovery, temp_dataset
+    ):
+        """Test initialization with a path string"""
+        # Mock the discovery process
+        mock_discovered = Mock()
