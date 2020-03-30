@@ -173,3 +173,22 @@ class TestBucketDataLoader:
         from webshart import BucketDataLoader
 
         with pytest.raises(ValueError, match="key must be"):
+            BucketDataLoader(dataset_or_path=mock_dataset, key="invalid_key")
+
+    @patch("webshart.BucketDataLoader")
+    def test_invalid_sampling_strategy(self, MockBucketDataLoader, mock_dataset):
+        """Test initialization with invalid sampling strategy"""
+        MockBucketDataLoader.side_effect = ValueError(
+            "sampling_strategy must be 'sequential', 'random_within_buckets', or 'fully_random'"
+        )
+
+        from webshart import BucketDataLoader
+
+        with pytest.raises(ValueError, match="sampling_strategy must be"):
+            BucketDataLoader(
+                dataset_or_path=mock_dataset, sampling_strategy="invalid_strategy"
+            )
+
+    @patch("webshart.BucketDataLoader")
+    def test_build_buckets_aspect_key(
+        self, MockBucketDataLoader, mock_dataset, mock_file_info
