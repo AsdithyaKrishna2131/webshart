@@ -268,3 +268,22 @@ class TestBucketDataLoader:
             {"path": "file2", "data": b"data2"},
             {"path": "file3", "data": b"data3"},
         ]
+        mock_instance.__iter__ = Mock(return_value=iter(mock_entries))
+        MockBucketDataLoader.return_value = mock_instance
+
+        from webshart import BucketDataLoader
+
+        loader = BucketDataLoader(
+            dataset_or_path=mock_dataset, sampling_strategy="sequential"
+        )
+
+        # Iterate and collect results
+        results = list(loader)
+
+        assert len(results) == 3
+        assert results[0]["path"] == "file1"
+        assert results[1]["path"] == "file2"
+        assert results[2]["path"] == "file3"
+
+    @patch("webshart.BucketDataLoader")
+    def test_skip_to_bucket(self, MockBucketDataLoader, mock_dataset):
