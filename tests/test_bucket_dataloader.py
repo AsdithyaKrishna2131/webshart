@@ -230,3 +230,22 @@ class TestBucketDataLoader:
         }
 
         # Mock the get_bucket_stats method
+        def mock_get_bucket_stats():
+            return {
+                "num_buckets": 3,
+                "total_files": 6,
+                "min_files_per_bucket": 1,
+                "max_files_per_bucket": 3,
+                "avg_files_per_bucket": 2.0,
+                "bucket_details": {"1.78": 3, "1.33": 1, "1.00": 2},
+            }
+
+        mock_instance.get_bucket_stats = mock_get_bucket_stats
+        MockBucketDataLoader.return_value = mock_instance
+
+        from webshart import BucketDataLoader
+
+        loader = BucketDataLoader(dataset_or_path=mock_dataset)
+
+        stats = loader.get_bucket_stats()
+
