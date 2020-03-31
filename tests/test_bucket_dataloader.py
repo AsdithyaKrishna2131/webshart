@@ -249,3 +249,22 @@ class TestBucketDataLoader:
 
         stats = loader.get_bucket_stats()
 
+        assert stats["num_buckets"] == 3
+        assert stats["total_files"] == 6
+        assert stats["min_files_per_bucket"] == 1
+        assert stats["max_files_per_bucket"] == 3
+        assert stats["avg_files_per_bucket"] == 2.0
+        assert "bucket_details" in stats
+
+    @patch("webshart.BucketDataLoader")
+    def test_iteration_sequential(self, MockBucketDataLoader, mock_dataset):
+        """Test sequential iteration through buckets"""
+        # Create mock instance
+        mock_instance = Mock()
+
+        # Mock the iteration behavior
+        mock_entries = [
+            {"path": "file1", "data": b"data1"},
+            {"path": "file2", "data": b"data2"},
+            {"path": "file3", "data": b"data3"},
+        ]
