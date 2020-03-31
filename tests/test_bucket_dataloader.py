@@ -192,3 +192,22 @@ class TestBucketDataLoader:
     @patch("webshart.BucketDataLoader")
     def test_build_buckets_aspect_key(
         self, MockBucketDataLoader, mock_dataset, mock_file_info
+    ):
+        """Test bucket building with aspect ratio key"""
+        # Create mock instance with buckets
+        mock_instance = Mock()
+        mock_instance.buckets = {
+            "1.78": [Mock(), Mock(), Mock()],  # 3 images with 16:9 aspect
+            "1.33": [Mock()],  # 1 image
+            "1.00": [Mock()],  # 1 image
+        }
+        MockBucketDataLoader.return_value = mock_instance
+
+        from webshart import BucketDataLoader
+
+        loader = BucketDataLoader(
+            dataset_or_path=mock_dataset, key="aspect", round_to=2
+        )
+
+        # Check that buckets were built correctly
+        assert len(loader.buckets) == 3  # 1.78, 1.33, 1.00
