@@ -211,3 +211,22 @@ class TestBucketDataLoader:
 
         # Check that buckets were built correctly
         assert len(loader.buckets) == 3  # 1.78, 1.33, 1.00
+        assert "1.78" in loader.buckets
+        assert len(loader.buckets["1.78"]) == 3  # 3 images with 16:9 aspect
+        assert "1.33" in loader.buckets
+        assert len(loader.buckets["1.33"]) == 1
+        assert "1.00" in loader.buckets
+        assert len(loader.buckets["1.00"]) == 1
+
+    @patch("webshart.BucketDataLoader")
+    def test_bucket_stats(self, MockBucketDataLoader, mock_dataset):
+        """Test get_bucket_stats method"""
+        # Create mock instance
+        mock_instance = Mock()
+        mock_instance.buckets = {
+            "1.78": [Mock(), Mock(), Mock()],  # 3 files
+            "1.33": [Mock()],  # 1 file
+            "1.00": [Mock(), Mock()],  # 2 files
+        }
+
+        # Mock the get_bucket_stats method
