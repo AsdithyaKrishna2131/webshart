@@ -306,3 +306,22 @@ class TestBucketDataLoader:
         from webshart import BucketDataLoader
 
         loader = BucketDataLoader(dataset_or_path=mock_dataset)
+
+        # Skip to bucket "1.78"
+        loader.skip_to_bucket("1.78")
+
+        assert loader.current_bucket_idx == 2
+        assert loader.current_entry_idx == 0
+
+    @patch("webshart.BucketDataLoader")
+    def test_skip_to_nonexistent_bucket(self, MockBucketDataLoader, mock_dataset):
+        """Test skipping to a bucket that doesn't exist"""
+        mock_instance = Mock()
+        mock_instance.skip_to_bucket = Mock(
+            side_effect=ValueError("Bucket '2.00' not found")
+        )
+        MockBucketDataLoader.return_value = mock_instance
+
+        from webshart import BucketDataLoader
+
+        loader = BucketDataLoader(dataset_or_path=mock_dataset)
