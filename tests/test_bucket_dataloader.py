@@ -325,3 +325,22 @@ class TestBucketDataLoader:
         from webshart import BucketDataLoader
 
         loader = BucketDataLoader(dataset_or_path=mock_dataset)
+
+        with pytest.raises(ValueError, match="Bucket .* not found"):
+            loader.skip_to_bucket("2.00")
+
+    @patch("webshart.BucketDataLoader")
+    def test_get_current_bucket(self, MockBucketDataLoader, mock_dataset):
+        """Test getting the current bucket name"""
+        mock_instance = Mock()
+        mock_instance.get_current_bucket = Mock(return_value="1.33")
+        MockBucketDataLoader.return_value = mock_instance
+
+        from webshart import BucketDataLoader
+
+        loader = BucketDataLoader(dataset_or_path=mock_dataset)
+
+        assert loader.get_current_bucket() == "1.33"
+
+    @patch("webshart.BucketDataLoader")
+    def test_reset(self, MockBucketDataLoader, mock_dataset):
