@@ -344,3 +344,22 @@ class TestBucketDataLoader:
 
     @patch("webshart.BucketDataLoader")
     def test_reset(self, MockBucketDataLoader, mock_dataset):
+        """Test resetting the loader"""
+        mock_instance = Mock()
+        reset_called = [False]
+
+        def mock_reset():
+            reset_called[0] = True
+            mock_instance.current_bucket_idx = 0
+            mock_instance.current_entry_idx = 0
+            mock_instance.random_position = 0
+
+        mock_instance.reset = mock_reset
+        mock_instance.current_bucket_idx = 0
+        mock_instance.current_entry_idx = 0
+        mock_instance.random_position = 0
+        MockBucketDataLoader.return_value = mock_instance
+
+        from webshart import BucketDataLoader
+
+        loader = BucketDataLoader(dataset_or_path=mock_dataset)
