@@ -42,3 +42,20 @@ def test_dataset_dir():
 
 @pytest.fixture
 def discovered_dataset(test_dataset_dir):
+    """Create a discovered dataset from test directory."""
+    discovery = DatasetDiscovery()
+    return discovery.discover_local(test_dataset_dir)
+
+
+@pytest.fixture
+def mock_tar_entry():
+    """Create a mock TarFileEntry for testing."""
+    from types import SimpleNamespace
+
+    entry = SimpleNamespace()
+    entry.path = "test.jpg"
+    entry.offset = 0
+    entry.size = 1000
+    entry.data = b"test data"
+    entry.width = 512
+    entry.height = 512
