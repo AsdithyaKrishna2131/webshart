@@ -25,3 +25,20 @@ def test_dataset_dir():
                     {
                         "path": f"shard{shard_idx}_file{file_idx}.jpg",
                         "offset": file_idx * 1000,
+                        "length": 1000,
+                        "width": 512,
+                        "height": 512,
+                        "aspect": 1.0,
+                    }
+                )
+
+            metadata = {"version": 2, "filesize": 100000, "files": files}
+
+            json_path = Path(tmpdir) / f"shard-{shard_idx:04d}.json"
+            json_path.write_text(json.dumps(metadata))
+
+        yield str(tmpdir)
+
+
+@pytest.fixture
+def discovered_dataset(test_dataset_dir):
