@@ -59,3 +59,20 @@ def mock_tar_entry():
     entry.data = b"test data"
     entry.width = 512
     entry.height = 512
+    entry.aspect = 1.0
+    entry.job_id = "shard0000_file000000"
+    entry.metadata = {
+        "path": "test.jpg",
+        "offset": 0,
+        "size": 1000,
+        "width": 512,
+        "height": 512,
+        "aspect": 1.0,
+    }
+    return entry
+
+
+class TestRangeBasedIteration:
+    """Test range-based iteration functionality."""
+
+    @pytest.mark.skipif(
