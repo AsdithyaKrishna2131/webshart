@@ -94,3 +94,20 @@ class TestRangeBasedIteration:
         not hasattr(TarDataLoader, "set_ranges"),
         reason="set_ranges not implemented yet",
     )
+    def test_set_ranges_multiple(self, discovered_dataset):
+        """Test setting multiple non-overlapping ranges."""
+        loader = TarDataLoader(discovered_dataset)
+        loader.set_ranges([(10, 20), (50, 60), (100, 110)])
+
+        entries = list(loader)
+
+        assert len(entries) == 30  # 10 + 10 + 10
+
+    @pytest.mark.skipif(
+        not hasattr(TarDataLoader, "set_ranges"),
+        reason="set_ranges not implemented yet",
+    )
+    def test_set_ranges_validation(self, discovered_dataset):
+        """Test range validation."""
+        loader = TarDataLoader(discovered_dataset)
+
