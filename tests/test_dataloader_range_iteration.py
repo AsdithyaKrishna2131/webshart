@@ -76,3 +76,21 @@ class TestRangeBasedIteration:
     """Test range-based iteration functionality."""
 
     @pytest.mark.skipif(
+        not hasattr(TarDataLoader, "set_ranges"),
+        reason="set_ranges not implemented yet",
+    )
+    def test_set_ranges_single(self, discovered_dataset):
+        """Test setting a single range."""
+        loader = TarDataLoader(discovered_dataset)
+        loader.set_ranges([(10, 20)])
+
+        # Collect all entries
+        entries = list(loader)
+
+        assert len(entries) == 10
+        # Check that entries are from the expected range
+
+    @pytest.mark.skipif(
+        not hasattr(TarDataLoader, "set_ranges"),
+        reason="set_ranges not implemented yet",
+    )
