@@ -111,3 +111,20 @@ class TestRangeBasedIteration:
         """Test range validation."""
         loader = TarDataLoader(discovered_dataset)
 
+        # Invalid range (start >= end)
+        with pytest.raises(ValueError, match="Invalid range"):
+            loader.set_ranges([(20, 10)])
+
+        # Empty range
+        with pytest.raises(ValueError, match="Invalid range"):
+            loader.set_ranges([(10, 10)])
+
+    def test_iter_range(self, discovered_dataset):
+        """Test iter_range method."""
+        loader = TarDataLoader(discovered_dataset)
+
+        # Test normal range
+        entries = list(loader.iter_range(start=10, end=20))
+        assert len(entries) == 10
+
+        # Test invalid range
