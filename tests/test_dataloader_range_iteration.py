@@ -128,3 +128,20 @@ class TestRangeBasedIteration:
         assert len(entries) == 10
 
         # Test invalid range
+        with pytest.raises(ValueError, match="start must be less than end"):
+            list(loader.iter_range(start=20, end=10))
+
+    @pytest.mark.skipif(
+        not hasattr(TarDataLoader, "iter_range"),
+        reason="iter_range not implemented yet",
+    )
+    def test_range_boundaries_across_shards(self, discovered_dataset):
+        """Test ranges that cross shard boundaries."""
+        loader = TarDataLoader(discovered_dataset)
+
+        # Range spans from shard 0 (file 90) to shard 1 (file 10)
+        entries = list(loader.iter_range(start=90, end=110))
+
+        assert len(entries) == 20
+
+
