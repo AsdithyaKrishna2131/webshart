@@ -145,3 +145,21 @@ class TestRangeBasedIteration:
         assert len(entries) == 20
 
 
+class TestRichMetadata:
+    """Test enriched metadata in TarFileEntry."""
+
+    def test_current_entry_structure(self, discovered_dataset):
+        """Test the current structure of entries returned by the loader."""
+        loader = TarDataLoader(discovered_dataset, load_file_data=False)
+
+        # Get first entry
+        entry = next(loader)
+
+        # Test current attributes
+        assert hasattr(entry, "path")
+        assert hasattr(entry, "offset")
+        assert hasattr(entry, "size")
+        assert hasattr(entry, "data")
+
+        # Document what new attributes we need
+        new_attrs_needed = ["width", "height", "aspect", "metadata", "job_id"]
