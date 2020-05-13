@@ -180,3 +180,20 @@ class TestRichMetadata:
         assert hasattr(entry, "metadata")
         assert hasattr(entry, "job_id")
 
+    def test_metadata_dict(self, discovered_dataset):
+        """Test metadata dictionary property."""
+        loader = TarDataLoader(discovered_dataset)
+        entry = next(loader)
+
+        metadata = entry.metadata
+        assert isinstance(metadata, dict)
+        assert "path" in metadata
+        assert "offset" in metadata
+        assert "size" in metadata
+
+    def test_job_id_format(self, discovered_dataset):
+        """Test job_id formatting."""
+        loader = TarDataLoader(discovered_dataset)
+        entry = next(loader)
+
+        # Should have format like "shard0000_file000000"
