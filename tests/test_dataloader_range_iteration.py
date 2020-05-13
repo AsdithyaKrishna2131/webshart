@@ -163,3 +163,20 @@ class TestRichMetadata:
 
         # Document what new attributes we need
         new_attrs_needed = ["width", "height", "aspect", "metadata", "job_id"]
+
+        for attr in new_attrs_needed:
+            if not hasattr(entry, attr):
+                print(f"Need to add: {attr}")
+
+    def test_metadata_fields(self, discovered_dataset):
+        """Test that all metadata fields are accessible."""
+        loader = TarDataLoader(discovered_dataset)
+        entry = next(loader)
+
+        # Check new fields
+        assert hasattr(entry, "width")
+        assert hasattr(entry, "height")
+        assert hasattr(entry, "aspect")
+        assert hasattr(entry, "metadata")
+        assert hasattr(entry, "job_id")
+
