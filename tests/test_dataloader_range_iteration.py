@@ -197,3 +197,20 @@ class TestRichMetadata:
         entry = next(loader)
 
         # Should have format like "shard0000_file000000"
+        assert entry.job_id.startswith("shard")
+        assert "_file" in entry.job_id
+
+
+class TestIntegration:
+    """Integration tests combining range iteration and metadata."""
+
+    def test_basic_iteration(self, discovered_dataset):
+        """Test that basic iteration still works."""
+        loader = TarDataLoader(discovered_dataset, load_file_data=False)
+
+        # Should be able to iterate
+        entries = []
+        for i, entry in enumerate(loader):
+            entries.append(entry)
+            if i >= 10:  # Just get first 10
+                break
