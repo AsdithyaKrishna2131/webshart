@@ -214,3 +214,20 @@ class TestIntegration:
             entries.append(entry)
             if i >= 10:  # Just get first 10
                 break
+
+        assert len(entries) == 11
+        assert all(e.path for e in entries)
+
+    def test_skip_functionality(self, discovered_dataset):
+        """Test skip functionality works."""
+        loader = TarDataLoader(discovered_dataset, load_file_data=False)
+
+        # Skip to file 150 (should be in shard 1)
+        loader.skip(150)
+
+        entry = next(loader)
+        assert entry is not None
+
+
+@pytest.mark.parametrize(
+    "batch_size,expected_batches",
