@@ -47,3 +47,20 @@ def mock_dataset_dir():
 
                         metadata["files"][member.name] = {
                             "offset": offset + header_size,  # Offset to actual data
+                            "length": member.size,  # Actual file size
+                        }
+                        offset += header_size + data_size
+
+            json_path = Path(tmpdir) / f"{shard_name}.json"
+            with open(json_path, "w") as f:
+                json.dump(metadata, f)
+
+        yield tmpdir
+
+
+@pytest.fixture
+def discovered_dataset(mock_dataset_dir):
+    """Create a discovered dataset from mock directory."""
+    return webshart.discover_dataset(mock_dataset_dir)
+
+
