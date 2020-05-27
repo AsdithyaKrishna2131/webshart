@@ -29,3 +29,21 @@ def mock_dataset_dir():
                     info = tarfile.TarInfo(name=filename)
                     info.size = len(data)
 
+                    # Add to tar
+                    tar.addfile(info, io.BytesIO(data))
+
+            # Create metadata JSON that matches the tar structure
+            metadata = {"filesize": os.path.getsize(tar_path), "files": {}}
+
+            # Read the tar to get actual offsets
+            with tarfile.open(tar_path, "r") as tar:
+                offset = 0
+                for member in tar:
+                    if member.isfile():
+                        # In tar files, the header is 512 bytes, followed by data rounded up to 512 bytes
+                        header_size = 512
+                        data_blocks = (member.size + 511) // 512
+                        data_size = data_blocks * 512
+
+                        metadata["files"][member.name] = {
+                            "offset": offset + header_size,  # Offset to actual data
