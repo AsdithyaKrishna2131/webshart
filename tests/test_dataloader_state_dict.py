@@ -64,3 +64,21 @@ def discovered_dataset(mock_dataset_dir):
     return webshart.discover_dataset(mock_dataset_dir)
 
 
+class TestTarDataLoaderStateDict:
+    """Test state dict functionality for resumable pipelines."""
+
+    def test_state_dict_basic(self, discovered_dataset):
+        """Test basic state dict saving."""
+        loader = webshart.TarDataLoader(discovered_dataset, buffer_size=5)
+
+        # Read a few files
+        for _ in range(3):
+            next(loader)
+
+        # Get state
+        state = loader.state_dict()
+
+        # Check state contents
+        assert isinstance(state, dict)
+        assert state["current_shard"] == 0
+        assert state["current_file_index"] == 3
