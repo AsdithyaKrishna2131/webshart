@@ -82,3 +82,20 @@ class TestTarDataLoaderStateDict:
         assert isinstance(state, dict)
         assert state["current_shard"] == 0
         assert state["current_file_index"] == 3
+        assert state["buffer_size"] == 5
+        assert state["version"] == 4
+        assert "source" in state
+        assert "num_shards" in state
+
+    def test_load_state_dict(self, discovered_dataset):
+        """Test loading state dict."""
+        loader1 = webshart.TarDataLoader(discovered_dataset, buffer_size=5)
+
+        # Read some files and switch shards
+        for _ in range(15):  # Read past first shard
+            next(loader1)
+
+        # Save state
+        state = loader1.state_dict()
+
+        # Create new loader and load state
