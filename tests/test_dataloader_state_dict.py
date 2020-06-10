@@ -99,3 +99,21 @@ class TestTarDataLoaderStateDict:
         state = loader1.state_dict()
 
         # Create new loader and load state
+        loader2 = webshart.TarDataLoader(discovered_dataset)
+        loader2.load_state_dict(state)
+
+        # Should continue from same position
+        entry = next(loader2)
+        assert "shard_0001" in entry.path
+        assert "000005" in entry.path  # Should be 6th file in shard 1
+
+    def test_from_state_dict(self, discovered_dataset):
+        """Test creating loader from state dict."""
+        loader1 = webshart.TarDataLoader(
+            discovered_dataset, buffer_size=10, load_file_data=False, max_file_size=5000
+        )
+
+        # Read to middle of dataset
+        for _ in range(17):
+            next(loader1)
+
