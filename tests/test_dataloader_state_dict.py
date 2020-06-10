@@ -151,3 +151,21 @@ class TestTarDataLoaderStateDict:
 
     def test_state_summary(self, discovered_dataset):
         """Test getting state summary."""
+        loader = webshart.TarDataLoader(discovered_dataset)
+
+        # Initial state
+        summary = loader.get_state_summary()
+        assert summary["current_shard"] == 0
+        assert summary["total_shards"] == 3
+        assert summary["files_processed"] == 0
+        assert summary["total_files"] == 30
+        assert summary["progress_percent"] == 0.0
+
+        # Read some files
+        for _ in range(15):
+            next(loader)
+
+        # Updated state
+        summary = loader.get_state_summary()
+        assert summary["current_shard"] == 1
+        assert summary["files_processed"] == 15
