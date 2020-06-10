@@ -117,3 +117,20 @@ class TestTarDataLoaderStateDict:
         for _ in range(17):
             next(loader1)
 
+        state = loader1.state_dict()
+
+        # Create new loader from state
+        loader2 = webshart.TarDataLoader.from_state_dict(state, discovered_dataset)
+
+        # Check configuration was restored
+        assert loader2.buffer_size == 10
+        assert not loader2.load_file_data
+        assert loader2.max_file_size == 5000
+
+        # Check position was restored
+        entry = next(loader2)
+        assert "shard_0001" in entry.path
+        assert "000007" in entry.path
+
+    def test_from_state_dict_with_source(self, mock_dataset_dir):
+        """Test creating loader from state dict with source in state."""
