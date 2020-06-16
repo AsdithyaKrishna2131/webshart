@@ -169,3 +169,20 @@ class TestTarDataLoaderStateDict:
         summary = loader.get_state_summary()
         assert summary["current_shard"] == 1
         assert summary["files_processed"] == 15
+        assert summary["progress_percent"] == 50.0
+
+    def test_state_persistence_with_skip(self, discovered_dataset):
+        """Test state persistence with skip operations."""
+        loader1 = webshart.TarDataLoader(discovered_dataset)
+
+        # Skip to middle of first shard
+        loader1.skip(5)
+        next(loader1)  # Read one file
+
+        state = loader1.state_dict()
+
+        # Create new loader from state
+        loader2 = webshart.TarDataLoader.from_state_dict(state, discovered_dataset)
+
+        # Should continue from correct position
+        entry = next(loader2)
