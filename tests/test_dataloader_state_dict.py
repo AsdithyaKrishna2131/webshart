@@ -204,3 +204,20 @@ class TestTarDataLoaderStateDict:
         # Should be at correct position
         entry = next(loader2)
         assert "shard_0002" in entry.path
+        assert "000008" in entry.path
+
+    def test_state_dict_version_check(self, discovered_dataset):
+        """Test version checking in state dict."""
+        loader = webshart.TarDataLoader(discovered_dataset)
+        state = loader.state_dict()
+
+        # Modify version
+        state["version"] = 999
+
+        # Should raise error
+        with pytest.raises(Exception) as exc_info:
+            loader.load_state_dict(state)
+
+        assert "Unsupported state dict version" in str(exc_info.value)
+
+    def test_state_dict_with_buffer_position(self, discovered_dataset):
