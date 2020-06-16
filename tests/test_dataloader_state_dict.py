@@ -186,3 +186,21 @@ class TestTarDataLoaderStateDict:
 
         # Should continue from correct position
         entry = next(loader2)
+        assert "000006" in entry.path
+
+    def test_state_persistence_with_shard_switch(self, discovered_dataset):
+        """Test state persistence after shard switching."""
+        loader1 = webshart.TarDataLoader(discovered_dataset)
+
+        # Switch to shard 2 with cursor
+        loader1.shard(shard_idx=2, cursor_idx=7)
+        next(loader1)
+
+        state = loader1.state_dict()
+
+        # Create new loader
+        loader2 = webshart.TarDataLoader.from_state_dict(state, discovered_dataset)
+
+        # Should be at correct position
+        entry = next(loader2)
+        assert "shard_0002" in entry.path
