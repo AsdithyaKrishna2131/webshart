@@ -221,3 +221,21 @@ class TestTarDataLoaderStateDict:
         assert "Unsupported state dict version" in str(exc_info.value)
 
     def test_state_dict_with_buffer_position(self, discovered_dataset):
+        """Test that buffer position is saved/restored correctly."""
+        loader1 = webshart.TarDataLoader(discovered_dataset, buffer_size=10)
+
+        # Read exactly 5 files (half a buffer)
+        for _ in range(5):
+            next(loader1)
+
+        state = loader1.state_dict()
+        assert state["buffer_position"] == 5
+
+        # Create new loader
+        loader2 = webshart.TarDataLoader.from_state_dict(state, discovered_dataset)
+
+        # Should continue without re-reading buffer
+        entry = next(loader2)
+        assert "000005" in entry.path
+
+    def test_state_dict_partial_load(self, discovered_dataset):
