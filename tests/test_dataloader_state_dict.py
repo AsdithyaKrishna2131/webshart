@@ -256,3 +256,21 @@ class TestTarDataLoaderStateDict:
         loader.load_state_dict(partial_state)
 
         # Position should be updated
+        assert loader.current_shard_index == 1
+        # But config should remain unchanged
+        assert loader.buffer_size == 20
+        assert not loader.load_file_data
+
+    def test_from_state_dict_no_source_error(self, discovered_dataset):
+        """Test error when creating from state dict without source."""
+        loader = webshart.TarDataLoader(discovered_dataset)
+        state = loader.state_dict()
+
+        # Remove source from state
+        del state["source"]
+
+        # Should raise error without dataset_or_path
+        with pytest.raises(Exception) as exc_info:
+            webshart.TarDataLoader.from_state_dict(state)
+
+        assert "No dataset_or_path provided" in str(exc_info.value)
