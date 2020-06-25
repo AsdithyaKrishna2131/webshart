@@ -239,3 +239,20 @@ class TestTarDataLoaderStateDict:
         assert "000005" in entry.path
 
     def test_state_dict_partial_load(self, discovered_dataset):
+        """Test partial state dict loading (only some fields)."""
+        loader = webshart.TarDataLoader(
+            discovered_dataset, buffer_size=20, load_file_data=False
+        )
+
+        # Create partial state dict
+        partial_state = {
+            "current_shard": 1,
+            "current_file_index": 5,
+            "version": 1,
+            # Missing other fields
+        }
+
+        # Should load without error
+        loader.load_state_dict(partial_state)
+
+        # Position should be updated
