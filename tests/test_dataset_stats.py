@@ -39,3 +39,18 @@ class TestDatasetStats:
             }
             json_path = tmp_path / f"shard-{i:04d}.json"
             json_path.write_text(json.dumps(metadata))
+
+        return tmp_path
+
+    @pytest.fixture
+    def local_dataset(self, mock_dataset_dir):
+        """Create a discovered dataset from mock directory."""
+        return discover_dataset(str(mock_dataset_dir))
+
+    def test_get_shard_file_count(self, local_dataset):
+        """Test getting file count for specific shard."""
+        # Test valid indices
+        assert local_dataset.get_shard_file_count(0) == 10
+        assert local_dataset.get_shard_file_count(1) == 20
+        assert local_dataset.get_shard_file_count(2) == 30
+
