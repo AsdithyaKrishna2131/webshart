@@ -70,3 +70,18 @@ class TestDatasetStats:
         stats = local_dataset.get_stats()
 
         assert stats["total_shards"] == 3
+        assert "shard_details" in stats
+        assert len(stats["shard_details"]) == 3
+
+        # First access won't have loaded metadata
+        assert stats["shard_details"][0]["metadata_loaded"] == False
+
+        # Load a shard
+        local_dataset.get_shard_file_count(0)
+
+        # Check again
+        stats = local_dataset.get_stats()
+        assert stats["shard_details"][0]["metadata_loaded"] == True
+        assert stats["shard_details"][0]["num_files"] == 10
+
+    def test_detailed_stats_property(self, local_dataset):
