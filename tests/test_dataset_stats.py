@@ -116,3 +116,18 @@ class TestDatasetStats:
         with pytest.raises(ValueError) as exc_info:
             local_dataset.get_shard_by_name("shard-9999")
         assert "not found" in str(exc_info.value)
+
+    @patch("webshart.discover_dataset")
+    def test_remote_dataset_cached_stats(self, mock_discover):
+        """Test that remote datasets use cached values."""
+        # Create a mock remote dataset with cached values
+        mock_dataset = MagicMock()
+        mock_dataset.num_shards = 100
+        mock_dataset.stats = {
+            "total_shards": 100,
+            "total_size": 1073741824000,  # 1TB
+            "total_size_gb": 1000.0,
+            "total_files": 50000,
+            "average_files_per_shard": 500.0,
+            "from_cache": True,
+            "shard_details": [],
