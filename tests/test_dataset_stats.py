@@ -100,3 +100,19 @@ class TestDatasetStats:
 
         # Check shard details
         assert len(stats["shard_details"]) == 3
+        for i, shard in enumerate(stats["shard_details"]):
+            assert shard["index"] == i
+            assert shard["name"] == f"shard-{i:04d}"
+            assert shard["num_files"] == 10 * (i + 1)
+
+    def test_get_shard_by_name(self, local_dataset):
+        """Test finding shard by name."""
+        # Test valid names
+        shard_info = local_dataset.get_shard_by_name("shard-0001")
+        assert shard_info["name"] == "shard-0001"
+        assert shard_info["num_files"] == 20
+
+        # Test not found
+        with pytest.raises(ValueError) as exc_info:
+            local_dataset.get_shard_by_name("shard-9999")
+        assert "not found" in str(exc_info.value)
