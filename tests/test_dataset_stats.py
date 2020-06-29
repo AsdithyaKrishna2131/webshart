@@ -146,3 +146,19 @@ class TestDatasetStats:
         assert stats["total_files"] == 1100
 
     def test_lazy_metadata_loading(self, local_dataset):
+        """Test that metadata is loaded lazily."""
+        # Initially, no metadata should be loaded
+        stats = local_dataset.get_stats()
+        for shard in stats["shard_details"]:
+            assert shard["metadata_loaded"] == False
+
+        # Access one shard
+        local_dataset.get_shard_file_count(1)
+
+        # Only that shard should have metadata loaded
+        stats = local_dataset.get_stats()
+        assert stats["shard_details"][0]["metadata_loaded"] == False
+        assert stats["shard_details"][1]["metadata_loaded"] == True
+        assert stats["shard_details"][2]["metadata_loaded"] == False
+
+    def test_stats_with_empty_dataset(self):
