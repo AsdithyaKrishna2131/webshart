@@ -85,3 +85,18 @@ class TestDatasetStats:
         assert stats["shard_details"][0]["num_files"] == 10
 
     def test_detailed_stats_property(self, local_dataset):
+        """Test the detailed_stats property getter."""
+        stats = local_dataset.get_detailed_stats()
+
+        # Should load all metadata
+        assert stats["total_shards"] == 3
+        assert stats["total_files"] == 60
+        assert stats["total_size"] == 6000000  # 1MB + 2MB + 3MB
+        assert stats["total_size_gb"] == pytest.approx(0.00559, rel=0.01)
+        assert stats["average_files_per_shard"] == 20.0
+        assert stats["min_files_in_shard"] == 10
+        assert stats["max_files_in_shard"] == 30
+        assert stats["from_cache"] == False
+
+        # Check shard details
+        assert len(stats["shard_details"]) == 3
