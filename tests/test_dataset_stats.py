@@ -131,3 +131,18 @@ class TestDatasetStats:
             "average_files_per_shard": 500.0,
             "from_cache": True,
             "shard_details": [],
+        }
+
+        mock_discover.return_value = mock_dataset
+
+        dataset = discover_dataset(
+            source="laion/conceptual-captions-12m-webdataset",
+            metadata="webshart/conceptual-captions-12m-webdataset-metadata",
+        )
+        stats = dataset.get_stats()
+
+        # Should use cached values
+        assert stats["from_cache"] == True
+        assert stats["total_files"] == 1100
+
+    def test_lazy_metadata_loading(self, local_dataset):
