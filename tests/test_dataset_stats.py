@@ -54,3 +54,19 @@ class TestDatasetStats:
         assert local_dataset.get_shard_file_count(1) == 20
         assert local_dataset.get_shard_file_count(2) == 30
 
+        # Test out of range
+        with pytest.raises(IndexError) as exc_info:
+            local_dataset.get_shard_file_count(3)
+        assert "out of range" in str(exc_info.value)
+
+    def test_get_total_files(self, local_dataset):
+        """Test getting total file count."""
+        # This loads all metadata
+        total = local_dataset.total_files
+        assert total == 60  # 10 + 20 + 30
+
+    def test_stats_property(self, local_dataset):
+        """Test the stats property getter."""
+        stats = local_dataset.get_stats()
+
+        assert stats["total_shards"] == 3
