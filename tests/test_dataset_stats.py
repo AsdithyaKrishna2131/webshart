@@ -193,3 +193,18 @@ class TestEdgeCases:
     def test_corrupted_metadata(self, tmp_path):
         """Test handling of corrupted metadata files."""
         # Create tar file
+        tar_path = tmp_path / "shard-0000.tar"
+        tar_path.write_bytes(b"mock tar content")
+
+        # Create corrupted JSON
+        json_path = tmp_path / "shard-0000.json"
+        json_path.write_text("{ invalid json")
+
+        # Should handle gracefully
+        dataset = discover_dataset(str(tmp_path))
+
+    def test_missing_json_files(self, tmp_path):
+        """Test handling when JSON files are missing."""
+        # Create only tar files
+        for i in range(3):
+            tar_path = tmp_path / f"shard-{i:04d}.tar"
