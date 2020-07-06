@@ -208,3 +208,18 @@ class TestEdgeCases:
         # Create only tar files
         for i in range(3):
             tar_path = tmp_path / f"shard-{i:04d}.tar"
+            tar_path.write_bytes(b"mock tar content")
+
+        # Should not discover any shards
+        with pytest.raises(Exception) as exc_info:
+            dataset = discover_dataset(str(tmp_path))
+        assert "NoShardsFound" in str(exc_info.typename) or "No shards found" in str(
+            exc_info.value
+        )
+
+    def test_large_dataset_performance(self, tmp_path):
+        """Test performance with many shards."""
+        # Create a dataset with many shards
+        num_shards = 100
+
+        for i in range(num_shards):
