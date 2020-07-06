@@ -177,3 +177,19 @@ class TestDatasetStats:
         quick_stats = local_dataset.get_stats()
 
         # Get detailed stats (loads all metadata)
+        detailed = local_dataset.get_detailed_stats()
+
+        # Basic counts should match
+        assert quick_stats["total_shards"] == detailed["total_shards"]
+
+        updated_stats = local_dataset.get_stats()
+        assert updated_stats["shard_details"][0]["metadata_loaded"] == True
+        assert updated_stats["shard_details"][0]["num_files"] == 10
+
+
+class TestEdgeCases:
+    """Test edge cases and error conditions."""
+
+    def test_corrupted_metadata(self, tmp_path):
+        """Test handling of corrupted metadata files."""
+        # Create tar file
