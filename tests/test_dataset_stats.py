@@ -162,3 +162,18 @@ class TestDatasetStats:
         assert stats["shard_details"][2]["metadata_loaded"] == False
 
     def test_stats_with_empty_dataset(self):
+        """Test stats methods with empty dataset."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create empty dataset (no shards)
+            with pytest.raises(Exception) as exc_info:
+                dataset = discover_dataset(tmpdir)
+            assert "NoShardsFound" in str(
+                exc_info.typename
+            ) or "No shards found" in str(exc_info.value)
+
+    def test_stats_consistency(self, local_dataset):
+        """Test that different stats methods return consistent data."""
+        # Get stats without loading metadata
+        quick_stats = local_dataset.get_stats()
+
+        # Get detailed stats (loads all metadata)
