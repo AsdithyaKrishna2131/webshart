@@ -42,3 +42,22 @@ def mock_dataset_dir():
                 for member in tar:
                     if member.isfile():
                         # In tar files, the header is 512 bytes, followed by data rounded up to 512 bytes
+                        header_size = 512
+                        data_blocks = (member.size + 511) // 512
+                        data_size = data_blocks * 512
+
+                        metadata["files"][member.name] = {
+                            "offset": offset + header_size,  # Offset to actual data
+                            "length": member.size,  # Actual file size
+                        }
+                        offset += header_size + data_size
+
+            json_path = Path(tmpdir) / f"{shard_name}.json"
+            with open(json_path, "w") as f:
+                json.dump(metadata, f)
+
+        yield tmpdir
+
+
+@pytest.fixture
+def discovered_dataset(mock_dataset_dir):
