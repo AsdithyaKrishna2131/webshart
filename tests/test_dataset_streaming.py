@@ -61,3 +61,22 @@ def mock_dataset_dir():
 
 @pytest.fixture
 def discovered_dataset(mock_dataset_dir):
+    """Create a discovered dataset from mock directory."""
+    return webshart.discover_dataset(mock_dataset_dir)
+
+
+@pytest.fixture
+def mixed_size_dataset_dir():
+    """Create one shard with oversized files interleaved with eligible files."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tar_path = Path(tmpdir) / "mixed-0000.tar"
+        contents = {
+            "0-oversized.jpg": b"x" * 101,
+            "1-small.jpg": b"small-zero",
+            "2-oversized.jpg": b"y" * 150,
+            "3-small.jpg": b"z" * 100,
+        }
+
+        with tarfile.open(tar_path, "w") as tar:
+            for filename, data in contents.items():
+                info = tarfile.TarInfo(name=filename)
