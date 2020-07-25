@@ -80,3 +80,22 @@ def mixed_size_dataset_dir():
         with tarfile.open(tar_path, "w") as tar:
             for filename, data in contents.items():
                 info = tarfile.TarInfo(name=filename)
+                info.size = len(data)
+                tar.addfile(info, io.BytesIO(data))
+
+        with tarfile.open(tar_path, "r") as tar:
+            files = {
+                member.name: {
+                    "offset": member.offset_data,
+                    "length": member.size,
+                    "width": 64,
+                    "height": 64,
+                    "aspect": 1.0,
+                }
+                for member in tar
+                if member.isfile()
+            }
+
+        (Path(tmpdir) / "mixed-0000.json").write_text(
+            json.dumps({"filesize": tar_path.stat().st_size, "files": files}),
+            encoding="utf-8",
