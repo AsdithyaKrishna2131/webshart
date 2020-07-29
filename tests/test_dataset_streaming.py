@@ -99,3 +99,23 @@ def mixed_size_dataset_dir():
         (Path(tmpdir) / "mixed-0000.json").write_text(
             json.dumps({"filesize": tar_path.stat().st_size, "files": files}),
             encoding="utf-8",
+        )
+        yield tmpdir
+
+
+class TestTarDataLoader:
+    """Test the TarDataLoader functionality."""
+
+    def test_basic_iteration(self, discovered_dataset):
+        """Test basic iteration through files."""
+        loader = webshart.TarDataLoader(discovered_dataset, buffer_size=5)
+
+        files_read = []
+        count = 0
+        for entry in loader:
+            files_read.append(entry.path)
+            count += 1
+            if count >= 10:  # Read first 10 files
+                break
+
+        assert len(files_read) == 10
