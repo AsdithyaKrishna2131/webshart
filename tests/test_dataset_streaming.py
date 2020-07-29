@@ -119,3 +119,22 @@ class TestTarDataLoader:
                 break
 
         assert len(files_read) == 10
+        # Files should start with shard_0000
+        assert all(f.startswith("shard_0000") for f in files_read)
+
+    def test_skip_within_shard(self, discovered_dataset):
+        """Test skipping files within a shard."""
+        loader = webshart.TarDataLoader(discovered_dataset, buffer_size=5)
+
+        # Skip first 5 files
+        loader.skip(5)
+
+        # Next file should be the 6th file (index 5)
+        entry = next(loader)
+        assert "000005" in entry.path  # Should be file 5 (0-indexed)
+
+    def test_skip_to_end_of_shard(self, discovered_dataset):
+        """Test skipping to near end of shard."""
+        loader = webshart.TarDataLoader(discovered_dataset, buffer_size=5)
+
+        # Skip to file 8 (9th file)
