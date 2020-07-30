@@ -157,3 +157,22 @@ class TestTarDataLoader:
 
         # Switch to shard 1
         loader.shard(shard_idx=1)
+
+        # Next file should be from shard 1
+        entry = next(loader)
+        assert "shard_0001" in entry.path
+        assert "000000" in entry.path  # First file in shard
+
+    def test_shard_switch_by_filename(self, discovered_dataset):
+        """Test switching shards by filename."""
+        loader = webshart.TarDataLoader(discovered_dataset, buffer_size=5)
+
+        # Switch to shard 2 by filename
+        loader.shard(filename="shard_0002")
+
+        # Next file should be from shard 2
+        entry = next(loader)
+        assert "shard_0002" in entry.path
+
+    def test_shard_switch_with_cursor(self, discovered_dataset):
+        """Test switching shards with cursor position."""
