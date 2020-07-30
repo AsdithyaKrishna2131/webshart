@@ -138,3 +138,22 @@ class TestTarDataLoader:
         loader = webshart.TarDataLoader(discovered_dataset, buffer_size=5)
 
         # Skip to file 8 (9th file)
+        loader.skip(8)
+
+        # Should be able to read files 8 and 9
+        entries = []
+        for entry in loader:
+            entries.append(entry)
+            if len(entries) >= 2:
+                break
+
+        assert len(entries) == 2
+        assert "000008" in entries[0].path
+        assert "000009" in entries[1].path
+
+    def test_shard_switch_by_index(self, discovered_dataset):
+        """Test switching shards by index."""
+        loader = webshart.TarDataLoader(discovered_dataset, buffer_size=5)
+
+        # Switch to shard 1
+        loader.shard(shard_idx=1)
