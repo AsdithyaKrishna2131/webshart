@@ -195,3 +195,22 @@ class TestTarDataLoader:
             next(loader)
 
         # Reset
+        loader.reset()
+
+        # Should start from beginning again
+        entry = next(loader)
+        assert "shard_0000" in entry.path
+        assert "000000" in entry.path
+
+    def test_buffer_size_property(self, discovered_dataset):
+        """Test buffer size property."""
+        loader = webshart.TarDataLoader(discovered_dataset, buffer_size=10)
+
+        assert loader.buffer_size == 10
+
+        # Change buffer size
+        loader.buffer_size = 20
+        assert loader.buffer_size == 20
+
+    def test_num_shards_property(self, discovered_dataset):
+        """Test num_shards property."""
