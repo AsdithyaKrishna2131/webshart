@@ -214,3 +214,23 @@ class TestTarDataLoader:
 
     def test_num_shards_property(self, discovered_dataset):
         """Test num_shards property."""
+        loader = webshart.TarDataLoader(discovered_dataset)
+
+        assert loader.num_shards == 3  # We created 3 shards
+
+    def test_current_shard_index_property(self, discovered_dataset):
+        """Test current_shard_index property."""
+        loader = webshart.TarDataLoader(discovered_dataset)
+
+        # Initially should be 0
+        assert loader.current_shard_index == 0
+
+        # After switching shards
+        loader.shard(shard_idx=2)
+        assert loader.current_shard_index == 2
+
+    def test_get_metadata(self, discovered_dataset):
+        """Test getting metadata for a shard."""
+        loader = webshart.TarDataLoader(discovered_dataset)
+
+        metadata = loader.get_metadata(0)
