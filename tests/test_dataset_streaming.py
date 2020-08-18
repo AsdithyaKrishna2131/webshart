@@ -234,3 +234,22 @@ class TestTarDataLoader:
         loader = webshart.TarDataLoader(discovered_dataset)
 
         metadata = loader.get_metadata(0)
+
+        # Should be a dict with file information
+        assert isinstance(metadata, dict)
+        assert len(metadata) == 10  # 10 files in shard
+
+        # Check a specific file's metadata
+        first_file = next(iter(metadata.keys()))
+        assert "offset" in metadata[first_file]
+        assert "length" in metadata[first_file]
+
+    def test_file_data_loading(self, discovered_dataset):
+        """Test that file data is loaded correctly."""
+        loader = webshart.TarDataLoader(discovered_dataset, load_file_data=True)
+
+        entry = next(loader)
+
+        # Check that data was loaded
+        assert len(entry.data) > 0
+        assert b"FAKE_JPEG_DATA_SHARD0_FILE0" in entry.data
