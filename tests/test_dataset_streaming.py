@@ -253,3 +253,22 @@ class TestTarDataLoader:
         # Check that data was loaded
         assert len(entry.data) > 0
         assert b"FAKE_JPEG_DATA_SHARD0_FILE0" in entry.data
+
+    def test_file_data_not_loaded(self, discovered_dataset):
+        """Test skipping file data loading."""
+        loader = webshart.TarDataLoader(discovered_dataset, load_file_data=False)
+
+        entry = next(loader)
+
+        # Data should be empty
+        assert len(entry.data) == 0
+
+    def test_iteration_across_shards(self, discovered_dataset):
+        """Test that iteration automatically moves across shards."""
+        loader = webshart.TarDataLoader(discovered_dataset, buffer_size=5)
+
+        # Collect all files
+        all_files = []
+        for entry in loader:
+            all_files.append(entry.path)
+
