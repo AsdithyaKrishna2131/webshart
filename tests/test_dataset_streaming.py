@@ -272,3 +272,22 @@ class TestTarDataLoader:
         for entry in loader:
             all_files.append(entry.path)
 
+        # Should have all 30 files (3 shards × 10 files)
+        assert len(all_files) == 30
+
+        # Check that we got files from all shards
+        shard_0_files = [f for f in all_files if "shard_0000" in f]
+        shard_1_files = [f for f in all_files if "shard_0001" in f]
+        shard_2_files = [f for f in all_files if "shard_0002" in f]
+
+        assert len(shard_0_files) == 10
+        assert len(shard_1_files) == 10
+        assert len(shard_2_files) == 10
+
+    def test_entry_properties(self, discovered_dataset):
+        """Test TarFileEntry properties."""
+        loader = webshart.TarDataLoader(discovered_dataset)
+
+        entry = next(loader)
+
+        # Check properties
