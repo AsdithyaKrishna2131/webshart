@@ -291,3 +291,22 @@ class TestTarDataLoader:
         entry = next(loader)
 
         # Check properties
+        assert isinstance(entry.path, str)
+        assert isinstance(entry.offset, int)
+        assert isinstance(entry.size, int)
+        assert isinstance(entry.data, bytes)
+
+        # Size should match data length (when loaded)
+        assert entry.size == len(entry.data)
+
+
+class TestTarDataLoaderErrors:
+    """Test error handling in TarDataLoader."""
+
+    def test_skip_out_of_bounds(self, discovered_dataset):
+        """Test skipping beyond shard bounds."""
+        loader = webshart.TarDataLoader(discovered_dataset)
+
+        # Try to skip beyond the 10 files in shard 0
+        with pytest.raises(Exception) as exc_info:
+            loader.skip(100)
