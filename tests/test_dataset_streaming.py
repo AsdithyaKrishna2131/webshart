@@ -310,3 +310,22 @@ class TestTarDataLoaderErrors:
         # Try to skip beyond the 10 files in shard 0
         with pytest.raises(Exception) as exc_info:
             loader.skip(100)
+
+        assert "out of range" in str(exc_info.value).lower()
+
+    def test_invalid_shard_index(self, discovered_dataset):
+        """Test switching to invalid shard."""
+        loader = webshart.TarDataLoader(discovered_dataset)
+
+        with pytest.raises(Exception) as exc_info:
+            loader.shard(shard_idx=999)
+
+        assert "out of range" in str(exc_info.value).lower()
+
+    def test_invalid_shard_filename(self, discovered_dataset):
+        """Test switching to non-existent shard by filename."""
+        loader = webshart.TarDataLoader(discovered_dataset)
+
+        with pytest.raises(Exception) as exc_info:
+            loader.shard(filename="nonexistent_shard")
+
