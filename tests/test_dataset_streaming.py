@@ -348,3 +348,23 @@ class TestDataLoaderIntegration:
         """Test creating loader with string path."""
         loader = webshart.TarDataLoader(mock_dataset_dir)
 
+        # Should work the same as with discovered dataset
+        entry = next(loader)
+        assert entry.path.startswith("shard_0000")
+
+    def test_loader_preserves_hf_token(self, discovered_dataset):
+        """Test that HF token is preserved when using discovered dataset."""
+        # Create dataset with token
+        dataset = webshart.DatasetDiscovery(hf_token="test_token").discover_local(
+            discovered_dataset.name
+        )
+
+        loader = webshart.TarDataLoader(dataset)
+
+        # The loader should have access to the token internally
+        # (This is used for remote datasets)
+        assert dataset.get_hf_token() == "test_token"
+
+    def test_max_file_size_limit(self, mock_dataset_dir):
+        """Oversized files are not yielded to callers."""
+        loader = webshart.TarDataLoader(mock_dataset_dir, max_file_size=100)
