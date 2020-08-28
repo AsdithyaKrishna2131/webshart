@@ -329,3 +329,22 @@ class TestTarDataLoaderErrors:
         with pytest.raises(Exception) as exc_info:
             loader.shard(filename="nonexistent_shard")
 
+        assert "not found" in str(exc_info.value).lower()
+
+    def test_no_shard_specified(self, discovered_dataset):
+        """Test shard() without arguments."""
+        loader = webshart.TarDataLoader(discovered_dataset)
+
+        with pytest.raises(Exception) as exc_info:
+            loader.shard()
+
+        assert "must be provided" in str(exc_info.value).lower()
+
+
+class TestDataLoaderIntegration:
+    """Integration tests with other webshart features."""
+
+    def test_loader_with_string_path(self, mock_dataset_dir):
+        """Test creating loader with string path."""
+        loader = webshart.TarDataLoader(mock_dataset_dir)
+
