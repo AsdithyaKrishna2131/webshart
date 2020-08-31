@@ -368,3 +368,22 @@ class TestDataLoaderIntegration:
     def test_max_file_size_limit(self, mock_dataset_dir):
         """Oversized files are not yielded to callers."""
         loader = webshart.TarDataLoader(mock_dataset_dir, max_file_size=100)
+
+        assert list(loader) == []
+
+    def test_max_file_size_skips_oversized_files_without_skipping_shard(
+        self, mixed_size_dataset_dir
+    ):
+        """Filtering an empty buffer continues to later eligible files."""
+        loader = webshart.TarDataLoader(
+            mixed_size_dataset_dir,
+            max_file_size=100,
+            buffer_size=1,
+        )
+
+        entries = list(loader)
+
+        assert [entry.path for entry in entries] == ["1-small.jpg", "3-small.jpg"]
+        assert [entry.job_id for entry in entries] == [
+            "shard0000_file000001",
+            "shard0000_file000003",
