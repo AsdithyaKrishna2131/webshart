@@ -22,3 +22,18 @@ def create_test_shard_metadata(shard_num, num_files=100):
             "length": size,  # webshart expects 'length' not 'size'
             "sha256": f"deadbeef{i:08x}" * 8,
         }
+        offset += size + 512  # Add tar padding
+
+    return {
+        "path": f"data-{shard_num:04d}.tar",
+        "filesize": offset,
+        "hash": f"hash{shard_num:04d}",
+        "hash_lfs": f"lfs_hash{shard_num:04d}",
+        "files": files,
+    }
+
+
+def test_discover_local_dataset():
+    """Test discovering a local dataset."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create mock dataset structure
