@@ -37,3 +37,18 @@ def test_discover_local_dataset():
     """Test discovering a local dataset."""
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create mock dataset structure
+        for i in range(3):
+            # Create JSON metadata
+            metadata = create_test_shard_metadata(i, num_files=50)
+            json_path = Path(tmpdir) / f"data-{i:04d}.json"
+            with open(json_path, "w") as f:
+                json.dump(metadata, f)
+
+            # Create empty tar file (just for discovery)
+            tar_path = Path(tmpdir) / f"data-{i:04d}.tar"
+            tar_path.touch()
+
+        # Discover dataset
+        dataset = webshart.discover_dataset(tmpdir)
+
+        assert dataset.name == tmpdir
