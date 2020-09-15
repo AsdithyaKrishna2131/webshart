@@ -52,3 +52,18 @@ def test_discover_local_dataset():
         dataset = webshart.discover_dataset(tmpdir)
 
         assert dataset.name == tmpdir
+        assert dataset.num_shards == 3
+        assert not dataset.is_remote
+
+        # Check shard info
+        shard_info = dataset.get_shard_info(0)
+        assert shard_info["name"] == "data-0000"
+        assert shard_info["num_files"] == 50
+
+        # List files in first shard
+        files = dataset.list_files_in_shard(0)
+        assert len(files) == 50
+        assert "0.webp" in files
+
+        # Find file location
+        shard_idx, local_idx = dataset.find_file_location(75)  # File in second shard
