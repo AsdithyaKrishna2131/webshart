@@ -67,3 +67,18 @@ def test_discover_local_dataset():
 
         # Find file location
         shard_idx, local_idx = dataset.find_file_location(75)  # File in second shard
+        assert shard_idx == 1
+        assert local_idx == 25
+
+
+def test_discover_local_dataset_recurses_and_preserves_relative_names():
+    """Nested local shards should not require flattening or a Hub metadata mirror."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        for split in ("train", "validation"):
+            shard_dir = Path(tmpdir) / split
+            shard_dir.mkdir()
+            (shard_dir / "data-0000.tar").touch()
+            (shard_dir / "data-0000.json").write_text(
+                json.dumps(create_test_shard_metadata(0, num_files=1))
+            )
+
