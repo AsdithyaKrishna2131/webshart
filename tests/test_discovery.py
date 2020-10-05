@@ -143,3 +143,18 @@ def test_dataset_repr():
         json_path = Path(tmpdir) / "data-0000.json"
         with open(json_path, "w") as f:
             json.dump(metadata, f)
+        tar_path = Path(tmpdir) / "data-0000.tar"
+        tar_path.touch()
+
+        dataset = webshart.discover_dataset(tmpdir)
+        repr_str = repr(dataset)
+
+        assert "DiscoveredDataset" in repr_str
+        assert "shards=1" in repr_str
+
+
+def test_file_location_out_of_range():
+    """Test error handling for out of range file index."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create minimal dataset
+        metadata = create_test_shard_metadata(0, num_files=10)
