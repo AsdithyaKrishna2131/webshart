@@ -113,3 +113,18 @@ def test_discover_dataset_uses_hf_token_environment(monkeypatch, tmp_path):
     }
 
 
+def test_discovery_no_shards():
+    """Test discovery when no shards are found."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Empty directory
+        with pytest.raises(Exception) as exc_info:
+            webshart.discover_dataset(tmpdir)
+        assert "No shards found" in str(exc_info.value)
+
+
+def test_discovery_missing_json():
+    """Test discovery when JSON files are missing."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create tar without JSON
+        tar_path = Path(tmpdir) / "data-0000.tar"
+        tar_path.touch()
