@@ -82,3 +82,19 @@ def test_discover_local_dataset_recurses_and_preserves_relative_names():
                 json.dumps(create_test_shard_metadata(0, num_files=1))
             )
 
+        dataset = webshart.discover_dataset(tmpdir)
+
+        assert dataset.num_shards == 2
+        assert dataset.get_shard_info(0)["name"] == "train/data-0000"
+        assert dataset.get_shard_info(1)["name"] == "validation/data-0000"
+
+
+def test_discover_dataset_uses_hf_token_environment(monkeypatch, tmp_path):
+    """The high-level discovery helper should honor standard Hub authentication."""
+    observed = {}
+
+    class FakeDiscovery:
+        def __init__(self, hf_token=None, metadata_source=None):
+            observed["hf_token"] = hf_token
+            observed["metadata_source"] = metadata_source
+
