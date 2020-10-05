@@ -128,3 +128,18 @@ def test_discovery_missing_json():
         # Create tar without JSON
         tar_path = Path(tmpdir) / "data-0000.tar"
         tar_path.touch()
+
+        # Should not find any complete pairs
+        with pytest.raises(Exception) as exc_info:
+            webshart.discover_dataset(tmpdir)
+        assert "No shards found" in str(exc_info.value)
+
+
+def test_dataset_repr():
+    """Test string representation of discovered dataset."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create minimal dataset
+        metadata = create_test_shard_metadata(0, num_files=10)
+        json_path = Path(tmpdir) / "data-0000.json"
+        with open(json_path, "w") as f:
+            json.dump(metadata, f)
