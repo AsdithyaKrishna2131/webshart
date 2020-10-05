@@ -98,3 +98,18 @@ def test_discover_dataset_uses_hf_token_environment(monkeypatch, tmp_path):
             observed["hf_token"] = hf_token
             observed["metadata_source"] = metadata_source
 
+        def discover_local(self, path):
+            observed["path"] = path
+            return "dataset"
+
+    monkeypatch.setenv("HF_TOKEN", "environment-token")
+    monkeypatch.setattr(webshart, "DatasetDiscovery", FakeDiscovery)
+
+    assert webshart.discover_dataset(str(tmp_path), metadata="owner/index") == "dataset"
+    assert observed == {
+        "hf_token": "environment-token",
+        "metadata_source": "owner/index",
+        "path": str(tmp_path),
+    }
+
+
