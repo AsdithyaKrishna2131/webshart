@@ -158,3 +158,19 @@ def test_file_location_out_of_range():
     with tempfile.TemporaryDirectory() as tmpdir:
         # Create minimal dataset
         metadata = create_test_shard_metadata(0, num_files=10)
+        json_path = Path(tmpdir) / "data-0000.json"
+        with open(json_path, "w") as f:
+            json.dump(metadata, f)
+        tar_path = Path(tmpdir) / "data-0000.tar"
+        tar_path.touch()
+
+        dataset = webshart.discover_dataset(tmpdir)
+
+        with pytest.raises(IndexError):
+            dataset.find_file_location(100)
+
+        with pytest.raises(Exception):
+            dataset.get_shard_info(10)
+
+
+def test_custom_discovery_pattern():
