@@ -174,3 +174,18 @@ def test_file_location_out_of_range():
 
 
 def test_custom_discovery_pattern():
+    """Test discovery with custom shard naming pattern."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create shards with different naming pattern
+        for i in range(2):
+            metadata = create_test_shard_metadata(i, num_files=25)
+            # Update path in metadata to match actual filename
+            metadata["path"] = f"shard_{i:03d}.tar"
+            json_path = Path(tmpdir) / f"shard_{i:03d}.json"
+            with open(json_path, "w") as f:
+                json.dump(metadata, f)
+            tar_path = Path(tmpdir) / f"shard_{i:03d}.tar"
+            tar_path.touch()
+
+        # Default pattern should still work with shard_ prefix
+        dataset = webshart.discover_dataset(tmpdir)
