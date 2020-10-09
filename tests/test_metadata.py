@@ -53,3 +53,22 @@ def create_vec_metadata():
             },
             {
                 "path": "image_002.webp",
+                "offset": 102912,
+                "length": 98304,
+                "sha256": "cafebabe" * 8,
+            },
+            {
+                "path": "image_003.webp",
+                "offset": 201216,
+                "length": 110592,
+                "sha256": "badc0de5" * 8,
+            },
+        ],
+    }
+
+
+def test_metadata_hashmap_format():
+    """Test loading metadata in HashMap format."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create dataset with HashMap metadata
+        metadata = create_hashmap_metadata()
