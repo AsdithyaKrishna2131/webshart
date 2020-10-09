@@ -189,3 +189,18 @@ def test_custom_discovery_pattern():
 
         # Default pattern should still work with shard_ prefix
         dataset = webshart.discover_dataset(tmpdir)
+
+        assert dataset.num_shards == 2
+        # Note: total_files is a property that loads metadata
+        # so we check it triggers loading
+        total = dataset.total_files
+        assert total == 50
+
+
+def test_quick_stats():
+    """Test quick_stats method."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create minimal dataset
+        metadata = create_test_shard_metadata(0, num_files=10)
+        json_path = Path(tmpdir) / "data-0000.json"
+        with open(json_path, "w") as f:
