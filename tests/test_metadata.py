@@ -112,3 +112,22 @@ def test_metadata_vec_format():
         shard_info = dataset.get_shard_info(0)
         assert shard_info["num_files"] == 3
         assert shard_info["size"] == 1048576
+
+        # Check file listing
+        files = dataset.list_files_in_shard(0)
+        assert len(files) == 3
+        # Files should be accessible even in Vec format
+        assert any("image_001" in f for f in files)
+
+
+def test_lazy_metadata_loading():
+    """Test that metadata is loaded lazily."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create multiple shards
+        for i in range(3):
+            metadata = {
+                "path": f"data-{i:04d}.tar",
+                "filesize": 1048576 * (i + 1),
+                "files": {
+                    f"file_{j}.webp": {"offset": j * 1024, "length": 1024}
+                    for j in range(10)
