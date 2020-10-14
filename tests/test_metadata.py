@@ -131,3 +131,23 @@ def test_lazy_metadata_loading():
                 "files": {
                     f"file_{j}.webp": {"offset": j * 1024, "length": 1024}
                     for j in range(10)
+                },
+            }
+            json_path = Path(tmpdir) / f"data-{i:04d}.json"
+            with open(json_path, "w") as f:
+                json.dump(metadata, f)
+            tar_path = Path(tmpdir) / f"data-{i:04d}.tar"
+            tar_path.touch()
+
+        # Discover dataset
+        dataset = webshart.discover_dataset(tmpdir)
+
+        # Quick stats should not load metadata
+        size, files = dataset.quick_stats()
+        assert size is None  # Local datasets don't have cached stats
+
+        # Accessing specific shard should load only that metadata
+        shard_info = dataset.get_shard_info(1)
+        assert shard_info["num_files"] == 10
+
+        # total_files should load all metadata
