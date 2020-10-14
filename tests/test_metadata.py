@@ -92,3 +92,23 @@ def test_metadata_hashmap_format():
         assert "image_001.webp" in files
         assert "image_002.webp" in files
         assert "image_003.webp" in files
+
+
+def test_metadata_vec_format():
+    """Test loading metadata in Vec/Array format."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create dataset with Vec metadata
+        metadata = create_vec_metadata()
+        json_path = Path(tmpdir) / "data-0000.json"
+        with open(json_path, "w") as f:
+            json.dump(metadata, f)
+        tar_path = Path(tmpdir) / "data-0000.tar"
+        tar_path.touch()
+
+        # Discover and load metadata
+        dataset = webshart.discover_dataset(tmpdir)
+
+        # Force metadata loading
+        shard_info = dataset.get_shard_info(0)
+        assert shard_info["num_files"] == 3
+        assert shard_info["size"] == 1048576
