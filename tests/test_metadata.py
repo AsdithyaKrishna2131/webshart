@@ -190,3 +190,23 @@ def test_invalid_metadata_format():
         dataset = webshart.discover_dataset(tmpdir)
 
         # Should fail when trying to access the shard
+        with pytest.raises(Exception):
+            dataset.get_shard_info(0)
+
+
+def test_file_info_aliases():
+    """Test that metadata handles field aliases (size vs length)."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Use 'size' instead of 'length' (should be handled by alias)
+        metadata = {
+            "path": "test.tar",
+            "filesize": 2048,
+            "files": {
+                "file1.webp": {
+                    "offset": 0,
+                    "size": 1024,  # Using 'size' instead of 'length'
+                },
+                "file2.webp": {"offset": 1024, "length": 1024},  # Using 'length'
+            },
+        }
+        json_path = Path(tmpdir) / "data-0000.json"
