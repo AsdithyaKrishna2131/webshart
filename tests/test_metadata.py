@@ -249,3 +249,23 @@ def test_batch_metadata_loading():
             info = dataset.get_shard_info(idx)
             assert info["num_files"] == 3
 
+
+def test_paired_json_sidecar_metadata_and_retrieval():
+    """Test sample metadata and JSON sidecar retrieval for image/json webdataset pairs."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tar_path = Path(tmpdir) / "data-0000.tar"
+        sample_json = {
+            "caption": "a small test image",
+            "text": "a small test image",
+            "captions": ["a small test image", "alternate view", "alternate view"],
+            "tags": ["test", "captioned"],
+        }
+
+        with tarfile.open(tar_path, "w") as tar:
+            image_bytes = b"not really an image"
+            image_info = tarfile.TarInfo("sample.webp")
+            image_info.size = len(image_bytes)
+            tar.addfile(image_info, BytesIO(image_bytes))
+
+            json_bytes = json.dumps(sample_json).encode("utf-8")
+            json_info = tarfile.TarInfo("sample.json")
