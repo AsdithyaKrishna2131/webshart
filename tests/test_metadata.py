@@ -170,3 +170,23 @@ def test_metadata_with_missing_fields():
         tar_path.touch()
 
         dataset = webshart.discover_dataset(tmpdir)
+        shard_info = dataset.get_shard_info(0)
+
+        assert shard_info["num_files"] == 1
+        # hash/hash_lfs are optional and may not be in the info
+
+
+def test_invalid_metadata_format():
+    """Test error handling for invalid metadata."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Invalid metadata (missing required fields)
+        metadata = {"some_field": "value"}
+        json_path = Path(tmpdir) / "data-0000.json"
+        with open(json_path, "w") as f:
+            json.dump(metadata, f)
+        tar_path = Path(tmpdir) / "data-0000.tar"
+        tar_path.touch()
+
+        dataset = webshart.discover_dataset(tmpdir)
+
+        # Should fail when trying to access the shard
