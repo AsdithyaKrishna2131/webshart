@@ -151,3 +151,22 @@ def test_lazy_metadata_loading():
         assert shard_info["num_files"] == 10
 
         # total_files should load all metadata
+        total = dataset.total_files
+        assert total == 30  # 3 shards * 10 files each
+
+
+def test_metadata_with_missing_fields():
+    """Test handling metadata with optional fields missing."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Minimal metadata
+        metadata = {
+            "filesize": 1024,
+            "files": {"test.webp": {"offset": 0, "length": 512}},
+        }
+        json_path = Path(tmpdir) / "data-0000.json"
+        with open(json_path, "w") as f:
+            json.dump(metadata, f)
+        tar_path = Path(tmpdir) / "data-0000.tar"
+        tar_path.touch()
+
+        dataset = webshart.discover_dataset(tmpdir)
