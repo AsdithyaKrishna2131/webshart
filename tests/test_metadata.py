@@ -210,3 +210,22 @@ def test_file_info_aliases():
             },
         }
         json_path = Path(tmpdir) / "data-0000.json"
+        with open(json_path, "w") as f:
+            json.dump(metadata, f)
+        tar_path = Path(tmpdir) / "data-0000.tar"
+        tar_path.touch()
+
+        dataset = webshart.discover_dataset(tmpdir)
+        files = dataset.list_files_in_shard(0)
+        assert len(files) == 2
+
+
+def test_batch_metadata_loading():
+    """Test batch loading of metadata."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create 5 shards
+        for i in range(5):
+            metadata = create_hashmap_metadata()
+            metadata["path"] = f"data-{i:04d}.tar"
+            json_path = Path(tmpdir) / f"data-{i:04d}.json"
+            with open(json_path, "w") as f:
