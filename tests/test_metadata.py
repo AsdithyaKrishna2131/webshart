@@ -229,3 +229,23 @@ def test_batch_metadata_loading():
             metadata["path"] = f"data-{i:04d}.tar"
             json_path = Path(tmpdir) / f"data-{i:04d}.json"
             with open(json_path, "w") as f:
+                json.dump(metadata, f)
+            tar_path = Path(tmpdir) / f"data-{i:04d}.tar"
+            tar_path.touch()
+
+        dataset = webshart.discover_dataset(tmpdir)
+
+        # Use batch operations to load metadata
+        batch_ops = webshart.BatchOperations()
+        results = batch_ops.load_metadata_batch(dataset, [0, 2, 4])
+
+        # Check all requested metadata was loaded
+        assert len(results) == 3
+        for result in results:
+            assert result is True  # All should succeed
+
+        # Verify metadata is actually loaded
+        for idx in [0, 2, 4]:
+            info = dataset.get_shard_info(idx)
+            assert info["num_files"] == 3
+
