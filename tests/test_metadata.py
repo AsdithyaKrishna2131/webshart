@@ -328,3 +328,22 @@ def test_txt_caption_probe_retrieval_and_metadata_export():
             caption_bytes = f"  {caption}\n".encode()
             caption_info = tarfile.TarInfo("nested/sample.txt")
             caption_info.size = len(caption_bytes)
+            tar.addfile(caption_info, BytesIO(caption_bytes))
+
+        webshart.MetadataExtractor().extract_metadata(
+            source=tmpdir,
+            destination=tmpdir,
+            max_workers=1,
+        )
+
+        dataset = webshart.discover_dataset(tmpdir)
+        assert dataset.list_files_in_shard(0) == [
+            "nested/sample.txt",
+            "nested/sample.webp",
+        ]
+        assert dataset.list_samples_in_shard(0) == ["nested/sample.webp"]
+        assert dataset.probe_caption_layout() == {
+            "layout": "txt_sidecar",
+            "shards_scanned": 1,
+            "total_shards": 1,
+            "complete": True,
