@@ -288,3 +288,23 @@ def test_paired_json_sidecar_metadata_and_retrieval():
 
         reader = dataset.open_shard(0)
         assert reader.num_files == 2
+        assert reader.num_samples == 1
+        assert reader.sample_filenames() == ["sample.webp"]
+        assert bytes(reader.read_sample(0)) == image_bytes
+        assert json.loads(bytes(reader.read_sample_json(0))) == sample_json
+
+        loader = webshart.TarDataLoader(dataset, load_file_data=False)
+        shard_metadata = loader.get_metadata(0)
+        assert shard_metadata["sample.webp"]["captions"] == [
+            "a small test image",
+            "alternate view",
+        ]
+        assert "caption" not in shard_metadata["sample.webp"]
+        assert shard_metadata["sample.webp"]["json_path"] == "sample.json"
+        assert shard_metadata["sample.webp"]["json_metadata"] == sample_json
+
+        entry = loader.load_sample(0, 0)
+        assert entry.path == "sample.webp"
+        assert entry.caption == "a small test image"
+        assert entry.captions == ["a small test image", "alternate view"]
+        assert entry.metadata["captions"] == ["a small test image", "alternate view"]
