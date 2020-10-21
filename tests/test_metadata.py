@@ -347,3 +347,23 @@ def test_txt_caption_probe_retrieval_and_metadata_export():
             "shards_scanned": 1,
             "total_shards": 1,
             "complete": True,
+            "samples": 1,
+            "captioned_samples": 1,
+            "uncaptioned_samples": 0,
+            "embedded_samples": 0,
+            "json_sidecar_samples": 0,
+            "txt_sidecar_samples": 1,
+        }
+
+        loader = webshart.TarDataLoader(dataset, load_file_data=False)
+        assert loader.load_caption(0, 0) == caption
+        entry = loader.load_sample(0, 0)
+        assert entry.path == "nested/sample.webp"
+        assert entry.caption == caption
+        assert entry.captions == caption
+
+        export_dir = root / "caption-metadata"
+        result = loader.coalesce_caption_metadata(str(export_dir))
+        assert result["shards"] == 1
+        assert result["captioned_samples"] == 1
+        assert result["coalesced_samples"] == 1
