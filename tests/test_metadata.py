@@ -308,3 +308,23 @@ def test_paired_json_sidecar_metadata_and_retrieval():
         assert entry.caption == "a small test image"
         assert entry.captions == ["a small test image", "alternate view"]
         assert entry.metadata["captions"] == ["a small test image", "alternate view"]
+        assert entry.metadata["json_path"] == "sample.json"
+        assert json.loads(bytes(entry.json_data)) == sample_json
+
+
+def test_txt_caption_probe_retrieval_and_metadata_export():
+    """Test `.txt` sidecars are logical captions rather than separate samples."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        root = Path(tmpdir)
+        tar_path = root / "data-0000.tar"
+        image_bytes = b"not really an image"
+        caption = "A caption from a text sidecar."
+
+        with tarfile.open(tar_path, "w") as tar:
+            image_info = tarfile.TarInfo("nested/sample.webp")
+            image_info.size = len(image_bytes)
+            tar.addfile(image_info, BytesIO(image_bytes))
+
+            caption_bytes = f"  {caption}\n".encode()
+            caption_info = tarfile.TarInfo("nested/sample.txt")
+            caption_info.size = len(caption_bytes)
