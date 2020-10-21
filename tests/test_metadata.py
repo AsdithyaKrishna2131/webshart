@@ -269,3 +269,22 @@ def test_paired_json_sidecar_metadata_and_retrieval():
 
             json_bytes = json.dumps(sample_json).encode("utf-8")
             json_info = tarfile.TarInfo("sample.json")
+            json_info.size = len(json_bytes)
+            tar.addfile(json_info, BytesIO(json_bytes))
+
+        extractor = webshart.MetadataExtractor()
+        extractor.extract_metadata(
+            source=tmpdir,
+            destination=tmpdir,
+            max_workers=1,
+        )
+
+        dataset = webshart.discover_dataset(tmpdir)
+        shard_info = dataset.get_shard_info(0)
+        assert shard_info["num_files"] == 2
+        assert shard_info["num_samples"] == 1
+        assert dataset.list_files_in_shard(0) == ["sample.json", "sample.webp"]
+        assert dataset.list_samples_in_shard(0) == ["sample.webp"]
+
+        reader = dataset.open_shard(0)
+        assert reader.num_files == 2
