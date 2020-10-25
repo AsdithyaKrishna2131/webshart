@@ -406,3 +406,23 @@ def test_txt_payload_with_json_sidecar_remains_a_logical_sample():
         tar_path = Path(tmpdir) / "data-0000.tar"
         with tarfile.open(tar_path, "w") as tar:
             for filename, data in [
+                ("document.txt", b"document body"),
+                ("document.json", b'{"caption": "document caption"}'),
+            ]:
+                info = tarfile.TarInfo(filename)
+                info.size = len(data)
+                tar.addfile(info, BytesIO(data))
+
+        webshart.MetadataExtractor().extract_metadata(tmpdir, tmpdir, max_workers=1)
+        dataset = webshart.discover_dataset(tmpdir)
+
+        assert dataset.list_samples_in_shard(0) == ["document.txt"]
+        assert dataset.probe_caption_layout()["layout"] == "json_sidecar"
+        entry = webshart.TarDataLoader(dataset).load_sample(0, 0)
+        assert entry.path == "document.txt"
+        assert entry.caption == "document caption"
+
+
+def test_upload_caption_metadata_uses_dataset_repo(monkeypatch, tmp_path):
+    """The optional uploader keeps publication separate from cache generation."""
+    calls = []
