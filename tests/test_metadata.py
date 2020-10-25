@@ -387,3 +387,22 @@ def test_caption_coalescing_can_persist_to_metadata_cache():
                 tar.addfile(info, BytesIO(data))
 
         webshart.MetadataExtractor().extract_metadata(tmpdir, tmpdir, max_workers=1)
+        dataset = webshart.discover_dataset(tmpdir)
+        dataset.enable_metadata_cache(cache, init_shard_count=0)
+        loader = webshart.TarDataLoader(dataset, load_file_data=False)
+
+        result = loader.coalesce_caption_metadata()
+
+        assert result["coalesced_samples"] == 1
+        cached_path = Path(result["files"][0])
+        assert cached_path.is_file()
+        cached = json.loads(cached_path.read_text())
+        assert cached["files"]["sample.webp"]["captions"] == "cached caption"
+
+
+def test_txt_payload_with_json_sidecar_remains_a_logical_sample():
+    """A `.txt` member is only a caption sidecar when another payload shares its stem."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        tar_path = Path(tmpdir) / "data-0000.tar"
+        with tarfile.open(tar_path, "w") as tar:
+            for filename, data in [
