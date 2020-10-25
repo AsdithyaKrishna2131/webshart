@@ -367,3 +367,23 @@ def test_txt_caption_probe_retrieval_and_metadata_export():
         assert result["shards"] == 1
         assert result["captioned_samples"] == 1
         assert result["coalesced_samples"] == 1
+        assert result["files"] == [str(export_dir / "data-0000.json")]
+        exported = json.loads((export_dir / "data-0000.json").read_text())
+        assert exported["files"]["nested/sample.webp"]["captions"] == caption
+        assert "captions" not in exported["files"]["nested/sample.txt"]
+
+
+def test_caption_coalescing_can_persist_to_metadata_cache():
+    """Test an enabled metadata cache is the default coalescing destination."""
+    with tempfile.TemporaryDirectory() as tmpdir, tempfile.TemporaryDirectory() as cache:
+        tar_path = Path(tmpdir) / "data-0000.tar"
+        with tarfile.open(tar_path, "w") as tar:
+            for filename, data in [
+                ("sample.webp", b"image"),
+                ("sample.txt", b"cached caption"),
+            ]:
+                info = tarfile.TarInfo(filename)
+                info.size = len(data)
+                tar.addfile(info, BytesIO(data))
+
+        webshart.MetadataExtractor().extract_metadata(tmpdir, tmpdir, max_workers=1)
