@@ -426,3 +426,22 @@ def test_txt_payload_with_json_sidecar_remains_a_logical_sample():
 def test_upload_caption_metadata_uses_dataset_repo(monkeypatch, tmp_path):
     """The optional uploader keeps publication separate from cache generation."""
     calls = []
+
+    class FakeApi:
+        def __init__(self, token):
+            calls.append(("token", token))
+
+        def upload_folder(self, **kwargs):
+            calls.append(("upload", kwargs))
+            return "commit-info"
+
+    monkeypatch.setitem(
+        sys.modules,
+        "huggingface_hub",
+        types.SimpleNamespace(HfApi=FakeApi),
+    )
+
+    result = webshart.upload_caption_metadata(
+        tmp_path,
+        "owner/metadata",
+        path_in_repo="indexes",
