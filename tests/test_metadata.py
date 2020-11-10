@@ -445,3 +445,23 @@ def test_upload_caption_metadata_uses_dataset_repo(monkeypatch, tmp_path):
         tmp_path,
         "owner/metadata",
         path_in_repo="indexes",
+        revision="captions",
+        hf_token="secret-token",
+    )
+
+    assert result == "commit-info"
+    assert calls[0] == ("token", "secret-token")
+    assert calls[1][1]["repo_id"] == "owner/metadata"
+    assert calls[1][1]["repo_type"] == "dataset"
+    assert calls[1][1]["path_in_repo"] == "indexes"
+    assert calls[1][1]["revision"] == "captions"
+
+
+def test_write_captions_to_metadata_uses_plural_key():
+    """Test library API for storing captions in webshart metadata listings."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        metadata_path = Path(tmpdir) / "data-0000.json"
+        metadata = {
+            "filesize": 123,
+            "files": {
+                "sample.webp": {
