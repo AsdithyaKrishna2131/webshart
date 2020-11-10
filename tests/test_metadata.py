@@ -465,3 +465,23 @@ def test_write_captions_to_metadata_uses_plural_key():
             "filesize": 123,
             "files": {
                 "sample.webp": {
+                    "offset": 512,
+                    "length": 32,
+                    "caption": "old caption",
+                },
+                "sample.json": {
+                    "offset": 1024,
+                    "length": 20,
+                },
+            },
+        }
+        metadata_path.write_text(json.dumps(metadata), encoding="utf-8")
+
+        updated = webshart.write_captions_to_metadata(
+            metadata_path,
+            {"sample": ["new caption", "alternate caption"]},
+        )
+
+        assert updated == 1
+        stored = json.loads(metadata_path.read_text(encoding="utf-8"))
+        assert stored["files"]["sample.webp"]["captions"] == [
