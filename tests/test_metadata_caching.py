@@ -31,3 +31,19 @@ class TestMetadataCachingPythonAPI:
             # Create tar file
             tar_path = os.path.join(temp_dir, f"shard-{i:04d}.tar")
             with open(tar_path, "wb") as f:
+                f.write(b"mock tar content")
+
+            # Create metadata json
+            metadata = {
+                "filesize": 1024 * (i + 1),
+                "files": {
+                    f"image_{i}_001.webp": {"offset": 0, "length": 512},
+                    f"image_{i}_002.webp": {"offset": 512, "length": 512},
+                },
+            }
+            json_path = os.path.join(temp_dir, f"shard-{i:04d}.json")
+            with open(json_path, "w") as f:
+                json.dump(metadata, f)
+
+        yield temp_dir
+        shutil.rmtree(temp_dir)
