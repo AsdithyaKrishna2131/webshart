@@ -47,3 +47,20 @@ class TestMetadataCachingPythonAPI:
 
         yield temp_dir
         shutil.rmtree(temp_dir)
+
+    def test_enable_metadata_cache_basic(self, temp_cache_dir, temp_dataset_dir):
+        """Test basic cache enabling functionality"""
+        from webshart import DatasetDiscovery
+
+        discovery = DatasetDiscovery()
+        dataset = discovery.discover_local(temp_dataset_dir)
+
+        # Should work without cache
+        info = dataset.get_shard_info(0)
+        assert info["name"] == "shard-0000"
+
+        # Enable cache
+        dataset.enable_metadata_cache(temp_cache_dir, init_shard_count=2)
+
+        # Cache should be enabled
+        stats = dataset.get_cache_stats()
