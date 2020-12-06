@@ -64,3 +64,20 @@ class TestMetadataCachingPythonAPI:
 
         # Cache should be enabled
         stats = dataset.get_cache_stats()
+        assert stats["cache_enabled"] is True
+        assert "cache_location" in stats
+        assert stats["cached_shards"] >= 0  # May have pre-loaded some
+
+    def test_cache_stats_accuracy(self, temp_cache_dir, temp_dataset_dir):
+        """Test that cache statistics are accurate"""
+        from webshart import DatasetDiscovery
+
+        discovery = DatasetDiscovery()
+        dataset = discovery.discover_local(temp_dataset_dir)
+
+        # Enable cache with no pre-loading
+        dataset.enable_metadata_cache(temp_cache_dir, init_shard_count=0)
+
+        # Initially no cached shards
+        stats = dataset.get_cache_stats()
+        assert stats["cached_shards"] == 0
