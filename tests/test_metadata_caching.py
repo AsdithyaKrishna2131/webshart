@@ -98,3 +98,20 @@ class TestMetadataCachingPythonAPI:
         from webshart import DatasetDiscovery
 
         discovery = DatasetDiscovery()
+        dataset = discovery.discover_local(temp_dataset_dir)
+
+        # Enable cache with pre-loading
+        dataset.enable_metadata_cache(temp_cache_dir, init_shard_count=3)
+
+        # Should have cached 3 shards
+        stats = dataset.get_cache_stats()
+        assert stats["cached_shards"] == 3
+
+    def test_cache_persistence(self, temp_cache_dir, temp_dataset_dir):
+        """Test that cache persists across dataset instances"""
+        from webshart import DatasetDiscovery
+
+        discovery = DatasetDiscovery()
+
+        # First instance - populate cache
+        dataset1 = discovery.discover_local(temp_dataset_dir)
