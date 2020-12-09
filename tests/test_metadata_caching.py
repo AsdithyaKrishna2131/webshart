@@ -81,3 +81,20 @@ class TestMetadataCachingPythonAPI:
         # Initially no cached shards
         stats = dataset.get_cache_stats()
         assert stats["cached_shards"] == 0
+        assert stats["cache_size_bytes"] == 0
+
+        # Access some shards
+        dataset.get_shard_info(0)
+        dataset.get_shard_info(1)
+
+        # Check stats updated
+        stats = dataset.get_cache_stats()
+        assert stats["cached_shards"] == 2
+        assert stats["cache_size_bytes"] > 0
+        assert stats["cache_size_mb"] > 0
+
+    def test_preload_on_enable(self, temp_cache_dir, temp_dataset_dir):
+        """Test that init_shard_count pre-loads metadata"""
+        from webshart import DatasetDiscovery
+
+        discovery = DatasetDiscovery()
