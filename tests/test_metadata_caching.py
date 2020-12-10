@@ -115,3 +115,20 @@ class TestMetadataCachingPythonAPI:
 
         # First instance - populate cache
         dataset1 = discovery.discover_local(temp_dataset_dir)
+        dataset1.enable_metadata_cache(temp_cache_dir, init_shard_count=2)
+
+        # Access additional shard
+        dataset1.get_shard_info(2)
+
+        stats1 = dataset1.get_cache_stats()
+        cached_count = stats1["cached_shards"]
+
+        # Second instance - should find existing cache
+        dataset2 = discovery.discover_local(temp_dataset_dir)
+        dataset2.enable_metadata_cache(temp_cache_dir, init_shard_count=0)
+
+        stats2 = dataset2.get_cache_stats()
+        assert stats2["cached_shards"] == cached_count
+
+    def test_clear_cache(self, temp_cache_dir, temp_dataset_dir):
+        """Test clearing the cache"""
