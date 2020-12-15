@@ -132,3 +132,20 @@ class TestMetadataCachingPythonAPI:
 
     def test_clear_cache(self, temp_cache_dir, temp_dataset_dir):
         """Test clearing the cache"""
+        from webshart import DatasetDiscovery
+
+        discovery = DatasetDiscovery()
+        dataset = discovery.discover_local(temp_dataset_dir)
+
+        # Enable and populate cache
+        dataset.enable_metadata_cache(temp_cache_dir, init_shard_count=3)
+
+        stats = dataset.get_cache_stats()
+        assert stats["cached_shards"] == 3
+
+        # Clear cache
+        dataset.clear_metadata_cache()
+
+        # Cache should be empty
+        stats = dataset.get_cache_stats()
+        assert stats["cached_shards"] == 0
