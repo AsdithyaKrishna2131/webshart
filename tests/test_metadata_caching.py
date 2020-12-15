@@ -183,3 +183,20 @@ class TestMetadataCachingPythonAPI:
     ):
         """Test that all metadata-dependent methods work with caching"""
         from webshart import DatasetDiscovery
+
+        discovery = DatasetDiscovery()
+        dataset = discovery.discover_local(temp_dataset_dir)
+        dataset.enable_metadata_cache(temp_cache_dir, init_shard_count=2)
+
+        # Test various methods that depend on metadata
+        assert dataset.num_shards == 5
+        assert dataset.total_files == 10  # 2 files per shard
+        assert dataset.total_size > 0
+
+        # Test shard info access
+        info = dataset.get_shard_info(3)
+        assert "name" in info
+        assert "num_files" in info
+
+        # Test file listing
+        files = dataset.list_files_in_shard(0)
