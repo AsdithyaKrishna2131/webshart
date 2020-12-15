@@ -149,3 +149,20 @@ class TestMetadataCachingPythonAPI:
         # Cache should be empty
         stats = dataset.get_cache_stats()
         assert stats["cached_shards"] == 0
+
+    def test_cache_improves_performance(self, temp_cache_dir, temp_dataset_dir):
+        """Test that cache improves access time"""
+        from webshart import DatasetDiscovery
+        import time
+
+        discovery = DatasetDiscovery()
+        dataset = discovery.discover_local(temp_dataset_dir)
+        dataset.enable_metadata_cache(temp_cache_dir, init_shard_count=0)
+
+        # First access - no cache
+        start = time.time()
+        for i in range(5):
+            dataset.get_shard_info(0)
+        uncached_time = time.time() - start
+
+        # Ensure it's cached
