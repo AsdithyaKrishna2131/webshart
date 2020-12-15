@@ -166,3 +166,20 @@ class TestMetadataCachingPythonAPI:
         uncached_time = time.time() - start
 
         # Ensure it's cached
+        dataset.get_shard_info(0)
+
+        # Second access - with cache
+        start = time.time()
+        for i in range(5):
+            dataset.get_shard_info(0)
+        cached_time = time.time() - start
+
+        # Cached should be faster (though this might be flaky in CI)
+        # Just check it doesn't get slower
+        assert cached_time <= uncached_time * 1.5
+
+    def test_all_metadata_methods_work_with_cache(
+        self, temp_cache_dir, temp_dataset_dir
+    ):
+        """Test that all metadata-dependent methods work with caching"""
+        from webshart import DatasetDiscovery
