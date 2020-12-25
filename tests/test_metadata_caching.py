@@ -200,3 +200,20 @@ class TestMetadataCachingPythonAPI:
 
         # Test file listing
         files = dataset.list_files_in_shard(0)
+        assert len(files) == 2
+
+        # Test file location finding
+        shard_idx, file_idx = dataset.find_file_location(5)  # 6th file overall
+        assert shard_idx == 2
+        assert file_idx == 1
+
+        # Test opening shard
+        reader = dataset.open_shard(0)
+        assert reader.num_files == 2
+
+    def test_stats_methods_with_cache(self, temp_cache_dir, temp_dataset_dir):
+        """Test get_stats and get_detailed_stats with caching"""
+        from webshart import DatasetDiscovery
+
+        discovery = DatasetDiscovery()
+        dataset = discovery.discover_local(temp_dataset_dir)
