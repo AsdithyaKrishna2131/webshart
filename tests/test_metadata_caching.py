@@ -217,3 +217,19 @@ class TestMetadataCachingPythonAPI:
 
         discovery = DatasetDiscovery()
         dataset = discovery.discover_local(temp_dataset_dir)
+        dataset.enable_metadata_cache(temp_cache_dir, init_shard_count=1)
+
+        # Quick stats
+        size, files = dataset.quick_stats()
+        # These might be None for local datasets
+
+        # Regular stats
+        stats = dataset.get_stats()
+        assert stats["total_shards"] == 5
+        assert "shard_details" in stats
+
+        # Detailed stats (forces loading all metadata)
+        detailed = dataset.get_detailed_stats()
+        assert detailed["total_shards"] == 5
+        assert detailed["total_files"] == 10
+        assert detailed["average_files_per_shard"] == 2.0
