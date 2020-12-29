@@ -233,3 +233,20 @@ class TestMetadataCachingPythonAPI:
         assert detailed["total_shards"] == 5
         assert detailed["total_files"] == 10
         assert detailed["average_files_per_shard"] == 2.0
+        assert detailed["from_cache"] is False  # Always False for detailed
+
+        # After detailed stats, all should be cached
+        cache_stats = dataset.get_cache_stats()
+        assert cache_stats["cached_shards"] == 5
+
+    @pytest.mark.parametrize(
+        "init_count,expected",
+        [
+            (0, 0),  # No pre-loading
+            (3, 3),  # Pre-load 3
+            (10, 5),  # More than available - should load all 5
+        ],
+    )
+    def test_init_shard_count_variations(
+        self, temp_cache_dir, temp_dataset_dir, init_count, expected
+    ):
