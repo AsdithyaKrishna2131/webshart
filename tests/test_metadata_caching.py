@@ -250,3 +250,20 @@ class TestMetadataCachingPythonAPI:
     def test_init_shard_count_variations(
         self, temp_cache_dir, temp_dataset_dir, init_count, expected
     ):
+        """Test different init_shard_count values"""
+        from webshart import DatasetDiscovery
+
+        discovery = DatasetDiscovery()
+        dataset = discovery.discover_local(temp_dataset_dir)
+
+        dataset.enable_metadata_cache(temp_cache_dir, init_shard_count=init_count)
+
+        stats = dataset.get_cache_stats()
+        assert stats["cached_shards"] == expected
+
+    def test_remote_dataset_caching_mock(self, temp_cache_dir):
+        """Test caching with mocked remote dataset"""
+        from webshart import DatasetDiscovery
+
+        # This would need proper mocking of the HuggingFace API
+        # Just showing the structure of how it would be tested
