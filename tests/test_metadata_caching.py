@@ -267,3 +267,20 @@ class TestMetadataCachingPythonAPI:
 
         # This would need proper mocking of the HuggingFace API
         # Just showing the structure of how it would be tested
+        with patch("webshart.DatasetDiscovery.discover_huggingface") as mock_discover:
+            # Mock a dataset with shards
+            mock_dataset = Mock()
+            mock_dataset.num_shards.return_value = 10
+            mock_dataset.is_remote = True
+            mock_dataset.name = "test/dataset"
+            mock_discover.return_value = mock_dataset
+
+            discovery = DatasetDiscovery(hf_token="fake-token")
+            dataset = discovery.discover_huggingface("test/dataset")
+
+            # Enable caching
+            dataset.enable_metadata_cache(temp_cache_dir, init_shard_count=5)
+
+    def test_cache_with_subfolder_datasets(self, temp_cache_dir):
+        """Test that cache keys handle subfolders correctly"""
+        from webshart import DatasetDiscovery
