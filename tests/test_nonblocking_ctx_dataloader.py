@@ -24,3 +24,20 @@ class MockDataLoader:
 
     def __next__(self):
         if self.index >= len(self.entries):
+            raise StopIteration
+        entry = self.entries[self.index]
+        self.index += 1
+        return entry
+
+    def will_block(self):
+        """Returns True based on block pattern."""
+        call_idx = self.will_block_calls
+        self.will_block_calls += 1
+        if call_idx < len(self.block_pattern):
+            self._blocking = self.block_pattern[call_idx]
+            return self.block_pattern[call_idx]
+        return False
+
+    def get_next_shard_info(self):
+        return {
+            "name": f"shard-{self.index:04d}.tar",
