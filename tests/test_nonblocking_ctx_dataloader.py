@@ -74,3 +74,20 @@ def mock_dataloader():
     return MockDataLoader(entries)
 
 
+def test_cache_wait_context_basic(mock_dataloader):
+    """Test basic iteration without blocking."""
+    with CacheWaitContext(mock_dataloader, progress_bar=False) as ctx:
+        results = list(ctx.iterate())
+
+    assert len(results) == 10
+    assert all(hasattr(r, "path") for r in results)
+
+
+def test_cache_wait_context_with_blocking(mock_dataloader):
+    """Test iteration with blocking pattern."""
+    # Block on first call only
+    mock_dataloader.block_pattern = [True] + [False] * 20
+
+    with CacheWaitContext(mock_dataloader, progress_bar=False) as ctx:
+        results = []
+        for entry in ctx.iterate():
