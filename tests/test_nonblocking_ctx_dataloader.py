@@ -58,3 +58,19 @@ class MockDataLoader:
 
             threading.Thread(target=finish_download, daemon=True).start()
 
+    def get_shard_cache_status(self, shard_name):
+        # Simulate download progress
+        if self._download_start_time:
+            elapsed = time.time() - self._download_start_time
+            progress = min(int(elapsed * 3000000), 1000000)  # Fast download for testing
+            return {"cur_filesize": progress, "is_cached": progress >= 1000000}
+        return {"cur_filesize": 0, "is_cached": False}
+
+
+@pytest.fixture
+def mock_dataloader():
+    """Create a mock dataloader with test entries."""
+    entries = [Mock(path=f"file_{i}.jpg") for i in range(10)]
+    return MockDataLoader(entries)
+
+
