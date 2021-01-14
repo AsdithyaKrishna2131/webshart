@@ -91,3 +91,20 @@ def test_cache_wait_context_with_blocking(mock_dataloader):
     with CacheWaitContext(mock_dataloader, progress_bar=False) as ctx:
         results = []
         for entry in ctx.iterate():
+            results.append(entry)
+
+    assert len(results) == 10
+    assert len(mock_dataloader.prepare_calls) >= 1  # Should have prepared at least once
+
+
+def test_cache_wait_context_progress_bar():
+    """Test that progress bars are created and closed properly."""
+    entries = [Mock(path=f"file_{i}.jpg") for i in range(5)]
+    loader = MockDataLoader(entries, block_pattern=[True] + [False] * 10)
+
+    # Patch tqdm where it's actually used
+    with patch("tqdm.tqdm") as mock_tqdm_class:
+        mock_pbar = MagicMock()
+        mock_cache_pbar = MagicMock()
+
+        # Configure the mock to return different objects
