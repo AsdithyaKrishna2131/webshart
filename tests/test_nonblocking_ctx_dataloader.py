@@ -142,3 +142,19 @@ def test_cache_wait_context_exception_handling():
         assert mock_pbar.close.called
 
 
+def test_cache_wait_blocking_timeout():
+    """Test that blocking doesn't hang indefinitely."""
+    entries = [Mock(path=f"file_{i}.jpg") for i in range(3)]
+    loader = MockDataLoader(entries)
+
+    # Set up a blocking pattern that will resolve after prepare_next_shard
+    loader.block_pattern = [True] + [False] * 20
+
+    start_time = time.time()
+    with CacheWaitContext(loader, progress_bar=False) as ctx:
+        results = list(ctx.iterate())
+
+    assert len(results) == 3
+    assert time.time() - start_time < 2  # Should complete quickly
+
+
