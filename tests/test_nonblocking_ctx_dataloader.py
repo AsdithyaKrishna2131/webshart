@@ -125,3 +125,20 @@ def test_cache_wait_context_exception_handling():
     entries = [Mock(path=f"file_{i}.jpg") for i in range(5)]
     loader = MockDataLoader(entries)
 
+    class TestException(Exception):
+        pass
+
+    with patch("tqdm.tqdm") as mock_tqdm_class:
+        mock_pbar = MagicMock()
+        mock_tqdm_class.return_value = mock_pbar
+
+        with pytest.raises(TestException):
+            with CacheWaitContext(loader, progress_bar=True) as ctx:
+                for i, entry in enumerate(ctx.iterate()):
+                    if i == 2:
+                        raise TestException("Test error")
+
+        # Progress bar should still be closed
+        assert mock_pbar.close.called
+
+
