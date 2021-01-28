@@ -108,3 +108,20 @@ def test_cache_wait_context_progress_bar():
         mock_cache_pbar = MagicMock()
 
         # Configure the mock to return different objects
+        mock_tqdm_class.side_effect = [mock_pbar, mock_cache_pbar] + [MagicMock()] * 10
+
+        with CacheWaitContext(loader, progress_bar=True) as ctx:
+            list(ctx.iterate())
+
+        # Progress bars should be created
+        assert mock_tqdm_class.call_count >= 1
+        # Main progress bar should be updated and closed
+        assert mock_pbar.update.called
+        assert mock_pbar.close.called
+
+
+def test_cache_wait_context_exception_handling():
+    """Test that context manager properly cleans up on exception."""
+    entries = [Mock(path=f"file_{i}.jpg") for i in range(5)]
+    loader = MockDataLoader(entries)
+
