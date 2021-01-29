@@ -158,3 +158,20 @@ def test_cache_wait_blocking_timeout():
     assert time.time() - start_time < 2  # Should complete quickly
 
 
+def test_cache_wait_download_progress():
+    """Test that download progress is tracked correctly."""
+    entries = [Mock(path=f"file_{i}.jpg") for i in range(2)]
+    loader = MockDataLoader(entries)
+
+    # Manually control blocking
+    loader._blocking = True
+    progress_updates = []
+
+    # Custom will_block that returns True for several calls
+    call_count = 0
+
+    def custom_will_block():
+        nonlocal call_count
+        call_count += 1
+        if call_count <= 1:
+            return True
