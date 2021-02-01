@@ -209,3 +209,19 @@ def test_cache_wait_interrupt_handling():
     with CacheWaitContext(loader, progress_bar=False) as ctx:
         try:
             for i, entry in enumerate(ctx.iterate()):
+                processed.append(entry)
+                if i == 3:
+                    # Simulate interrupt
+                    raise KeyboardInterrupt()
+        except KeyboardInterrupt:
+            pass  # Expected
+
+    assert len(processed) == 4  # Should have processed 4 before interrupt
+
+
+@pytest.mark.parametrize("lookahead", [1, 3, 5])
+def test_cache_wait_lookahead(lookahead):
+    """Test different lookahead values."""
+    entries = [Mock(path=f"file_{i}.jpg") for i in range(10)]
+    loader = MockDataLoader(entries)
+
