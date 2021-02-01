@@ -58,3 +58,19 @@ def test_optimize_dataset_repackages_legacy_tars_and_resumes(tmp_path):
     assert second["next_source_archive_index"] == 1
     assert second["captioned_samples"] == 3
 
+    output = destination / "webshart"
+    with tarfile.open(output / "shard-00000.tar") as archive:
+        assert archive.getnames() == ["train_0000/caption_0.jpg"]
+    metadata = json.loads((output / "shard-00000.json").read_text())
+    entry = metadata["files"]["train_0000/caption_0.jpg"]
+    assert entry["captions"] == "caption 0"
+
+    state_text = (output / ".webshart-optimize-state.json").read_text()
+    assert str(source.resolve()) not in state_text
+    assert str(destination.resolve()) not in state_text
+
+
+def test_optimize_dataset_skips_truncated_legacy_tar_tail(tmp_path):
+    source = tmp_path / "source"
+    destination = tmp_path / "output"
+    _write_legacy_tar(source, count=2)
