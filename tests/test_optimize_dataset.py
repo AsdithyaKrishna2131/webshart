@@ -41,3 +41,20 @@ def test_optimize_dataset_repackages_legacy_tars_and_resumes(tmp_path):
         max_shards=1,
     )
     assert first["input_layout"] == "legacy_tar"
+    assert first["status"] == "running"
+    assert first["next_sample_index"] == 1
+    assert first["next_source_archive_index"] == 0
+    assert first["next_source_member_offset"] > 0
+
+    second = webshart.optimize_dataset(
+        source,
+        destination=destination,
+        max_shard_size_bytes=1_500,
+        include_image_geometry=False,
+    )
+    assert second["status"] == "complete"
+    assert second["resumed"] is True
+    assert second["next_sample_index"] == 3
+    assert second["next_source_archive_index"] == 1
+    assert second["captioned_samples"] == 3
+
