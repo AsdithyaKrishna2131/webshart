@@ -25,3 +25,19 @@ def _write_legacy_tar(root: Path, count: int = 3) -> None:
             payload = root / f"caption_{index}.jpg"
             payload.write_bytes(f"legacy-{index}".encode())
             archive.add(payload, arcname=f"./caption_{index}.jpg")
+            payload.unlink()
+
+
+def test_optimize_dataset_repackages_legacy_tars_and_resumes(tmp_path):
+    source = tmp_path / "source"
+    destination = tmp_path / "output"
+    _write_legacy_tar(source)
+
+    first = webshart.optimize_dataset(
+        source,
+        destination=destination,
+        max_shard_size_bytes=1_500,
+        include_image_geometry=False,
+        max_shards=1,
+    )
+    assert first["input_layout"] == "legacy_tar"
