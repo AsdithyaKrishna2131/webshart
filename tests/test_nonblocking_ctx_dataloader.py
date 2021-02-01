@@ -192,3 +192,20 @@ def test_cache_wait_download_progress():
 
     # Should have captured some progress updates
     assert len(progress_updates) > 1
+    # Progress should increase
+    assert any(
+        progress_updates[i] < progress_updates[i + 1]
+        for i in range(len(progress_updates) - 1)
+    )
+
+
+def test_cache_wait_interrupt_handling():
+    """Test structure for interrupt handling."""
+    entries = [Mock(path=f"file_{i}.jpg") for i in range(10)]
+    loader = MockDataLoader(entries)
+
+    processed = []
+
+    with CacheWaitContext(loader, progress_bar=False) as ctx:
+        try:
+            for i, entry in enumerate(ctx.iterate()):
