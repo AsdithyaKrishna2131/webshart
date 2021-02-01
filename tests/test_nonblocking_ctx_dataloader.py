@@ -175,3 +175,20 @@ def test_cache_wait_download_progress():
         call_count += 1
         if call_count <= 1:
             return True
+        elif call_count <= 5:  # Block for a few more calls to simulate download
+            status = loader.get_shard_cache_status("shard-0000.tar")
+            progress_updates.append(status["cur_filesize"])
+            return True
+        else:
+            return False
+
+    loader.will_block = custom_will_block
+
+    with CacheWaitContext(loader, progress_bar=False) as ctx:
+        # Just get first entry to trigger the blocking
+        for i, entry in enumerate(ctx.iterate()):
+            if i == 0:
+                break
+
+    # Should have captured some progress updates
+    assert len(progress_updates) > 1
