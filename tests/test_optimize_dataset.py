@@ -74,3 +74,19 @@ def test_optimize_dataset_skips_truncated_legacy_tar_tail(tmp_path):
     source = tmp_path / "source"
     destination = tmp_path / "output"
     _write_legacy_tar(source, count=2)
+    archive_path = source / "train_0000.tar"
+    with tarfile.open(archive_path) as archive:
+        last = archive.getmembers()[-1]
+        truncated_size = last.offset_data + last.size // 2
+    with archive_path.open("r+b") as handle:
+        handle.truncate(truncated_size)
+
+    result = webshart.optimize_dataset(
+        source,
+        destination=destination,
+        include_image_geometry=False,
+    )
+
+    assert result["status"] == "complete"
+    assert result["next_sample_index"] == 1
+    with tarfile.open(destination / "webshart" / "shard-00000.tar") as archive:
