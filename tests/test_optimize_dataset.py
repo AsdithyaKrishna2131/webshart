@@ -139,3 +139,19 @@ def test_optimize_dataset_shards_embeds_captions_and_resumes_locally(tmp_path):
     assert state["source"] == {"kind": "local", "subfolder": ""}
     assert str(source.resolve()) not in state_text
     assert str(destination.resolve()) not in state_text
+
+    completed = webshart.optimize_dataset(
+        source,
+        destination=destination,
+        max_shard_size_bytes=1_500,
+        include_image_geometry=False,
+    )
+    assert completed["status"] == "complete"
+    assert completed["shards_created"] == 0
+
+
+def test_optimize_dataset_uploads_each_shard_with_resume_state(tmp_path, monkeypatch):
+    source = tmp_path / "source"
+    _write_loose_pairs(source, count=2)
+    uploaded_state = tmp_path / "uploaded-state.json"
+    commits = []
