@@ -123,3 +123,19 @@ def test_optimize_dataset_shards_embeds_captions_and_resumes_locally(tmp_path):
     assert second["next_sample_index"] == 5
     assert second["captioned_samples"] == 5
     assert second["uncaptioned_samples"] == 0
+
+    output = destination / "webshart"
+    assert len(list(output.glob("shard-*.tar"))) == 5
+    assert len(list(output.glob("shard-*.json"))) == 5
+    with tarfile.open(output / "shard-00000.tar") as archive:
+        assert archive.getnames() == ["nested/group-0/sample-0.jpg"]
+    metadata = json.loads((output / "shard-00000.json").read_text())
+    entry = metadata["files"]["nested/group-0/sample-0.jpg"]
+    assert entry["captions"] == "caption 0"
+    assert not any(path.endswith(".txt") for path in metadata["files"])
+
+    state_text = (output / ".webshart-optimize-state.json").read_text()
+    state = json.loads(state_text)
+    assert state["source"] == {"kind": "local", "subfolder": ""}
+    assert str(source.resolve()) not in state_text
+    assert str(destination.resolve()) not in state_text
