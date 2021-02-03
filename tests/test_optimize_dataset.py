@@ -106,3 +106,20 @@ def test_optimize_dataset_shards_embeds_captions_and_resumes_locally(tmp_path):
         max_shards=2,
     )
 
+    assert first["status"] == "running"
+    assert first["next_sample_index"] == 2
+    assert first["next_shard_index"] == 2
+    assert first["shards_created"] == 2
+
+    second = webshart.optimize_dataset(
+        source,
+        destination=destination,
+        max_shard_size_bytes=1_500,
+        include_image_geometry=False,
+    )
+
+    assert second["resumed"] is True
+    assert second["status"] == "complete"
+    assert second["next_sample_index"] == 5
+    assert second["captioned_samples"] == 5
+    assert second["uncaptioned_samples"] == 0
