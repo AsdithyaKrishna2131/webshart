@@ -90,3 +90,19 @@ def test_optimize_dataset_skips_truncated_legacy_tar_tail(tmp_path):
     assert result["status"] == "complete"
     assert result["next_sample_index"] == 1
     with tarfile.open(destination / "webshart" / "shard-00000.tar") as archive:
+        assert archive.getnames() == ["train_0000/caption_0.jpg"]
+
+
+def test_optimize_dataset_shards_embeds_captions_and_resumes_locally(tmp_path):
+    source = tmp_path / "source"
+    destination = tmp_path / "output"
+    _write_loose_pairs(source)
+
+    first = webshart.optimize_dataset(
+        source,
+        destination=destination,
+        max_shard_size_bytes=1_500,
+        include_image_geometry=False,
+        max_shards=2,
+    )
+
