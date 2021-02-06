@@ -155,3 +155,19 @@ def test_optimize_dataset_uploads_each_shard_with_resume_state(tmp_path, monkeyp
     _write_loose_pairs(source, count=2)
     uploaded_state = tmp_path / "uploaded-state.json"
     commits = []
+
+    class FakeOperation:
+        def __init__(self, path_in_repo, path_or_fileobj):
+            self.path_in_repo = path_in_repo
+            self.path_or_fileobj = Path(path_or_fileobj)
+
+    class FakeApi:
+        def __init__(self, token=None):
+            self.token = token
+
+        def create_repo(self, *args, **kwargs):
+            return None
+
+        def file_exists(self, *args, **kwargs):
+            return uploaded_state.is_file()
+
