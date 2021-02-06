@@ -187,3 +187,20 @@ def test_optimize_dataset_uploads_each_shard_with_resume_state(tmp_path, monkeyp
         return str(uploaded_state)
 
     def unused_url(*args, **kwargs):
+        raise AssertionError("local source should not construct a Hub download URL")
+
+    monkeypatch.setattr(
+        optimize_module,
+        "_require_hub",
+        lambda: (FakeApi, FakeOperation, fake_download, unused_url, None),
+    )
+
+    first = webshart.optimize_dataset(
+        source,
+        push_to_hub="owner/target",
+        output_prefix="converted",
+        max_shard_size_bytes=1_500,
+        include_image_geometry=False,
+        max_shards=1,
+        hf_token="token",
+    )
