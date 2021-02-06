@@ -171,3 +171,19 @@ def test_optimize_dataset_uploads_each_shard_with_resume_state(tmp_path, monkeyp
         def file_exists(self, *args, **kwargs):
             return uploaded_state.is_file()
 
+        def create_commit(self, repo_id, operations, **kwargs):
+            snapshot = {}
+            for operation in operations:
+                snapshot[operation.path_in_repo] = (
+                    operation.path_or_fileobj.read_bytes()
+                )
+            uploaded_state.write_bytes(
+                snapshot["converted/.webshart-optimize-state.json"]
+            )
+            commits.append((repo_id, snapshot, kwargs))
+            return "commit"
+
+    def fake_download(*args, **kwargs):
+        return str(uploaded_state)
+
+    def unused_url(*args, **kwargs):
