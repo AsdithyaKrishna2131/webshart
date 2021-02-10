@@ -204,3 +204,19 @@ def test_optimize_dataset_uploads_each_shard_with_resume_state(tmp_path, monkeyp
         max_shards=1,
         hf_token="token",
     )
+    second = webshart.optimize_dataset(
+        source,
+        push_to_hub="owner/target",
+        output_prefix="converted",
+        max_shard_size_bytes=1_500,
+        include_image_geometry=False,
+        hf_token="token",
+    )
+
+    assert first["status"] == "running"
+    assert second["status"] == "complete"
+    assert second["resumed"] is True
+    assert len(commits) == 2
+    for index, (repo_id, files, kwargs) in enumerate(commits):
+        assert repo_id == "owner/target"
+        assert set(files) == {
