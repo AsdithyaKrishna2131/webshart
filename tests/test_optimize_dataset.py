@@ -220,3 +220,19 @@ def test_optimize_dataset_uploads_each_shard_with_resume_state(tmp_path, monkeyp
     for index, (repo_id, files, kwargs) in enumerate(commits):
         assert repo_id == "owner/target"
         assert set(files) == {
+            f"converted/shard-{index:05d}.tar",
+            f"converted/shard-{index:05d}.json",
+            "converted/.webshart-optimize-state.json",
+        }
+        assert kwargs["repo_type"] == "dataset"
+
+    state_text = uploaded_state.read_text()
+    assert str(source.resolve()) not in state_text
+    assert json.loads(state_text)["next_sample_index"] == 2
+
+
+def test_optimize_dataset_rejects_changed_manifest_on_resume(tmp_path):
+    source = tmp_path / "source"
+    destination = tmp_path / "output"
+    _write_loose_pairs(source, count=2)
+    webshart.optimize_dataset(
