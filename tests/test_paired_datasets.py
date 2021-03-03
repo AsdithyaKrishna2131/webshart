@@ -37,3 +37,13 @@ def test_pair_index_can_use_intersection_and_report_unmatched_keys():
     paired = webshart.PairedDataset(
         FakeDataset([["shared.mp3", "left-only.mp3"]]),
         FakeDataset([["shared.mp3", "right-only.mp3"]]),
+        strict=False,
+    )
+
+    assert len(paired) == 1
+    assert paired.unmatched_left == ["left-only"]
+    assert paired.unmatched_right == ["right-only"]
+
+
+def test_pair_index_rejects_duplicate_keys():
+    paired = webshart.PairedDataset(
