@@ -47,3 +47,13 @@ def test_pair_index_can_use_intersection_and_report_unmatched_keys():
 
 def test_pair_index_rejects_duplicate_keys():
     paired = webshart.PairedDataset(
+        FakeDataset([["same.mp3", "same.wav"]]),
+        FakeDataset([["same.mp3"]]),
+    )
+
+    with pytest.raises(ValueError, match="duplicate pair key on left"):
+        len(paired)
+
+
+def test_discover_paired_dataset_uses_same_repo_for_two_subfolders(monkeypatch):
+    calls = []
