@@ -27,3 +27,13 @@ def test_pair_index_reports_mismatches_in_strict_mode():
     paired = webshart.PairedDataset(
         FakeDataset([["shared.mp3", "left-only.mp3"]]),
         FakeDataset([["shared.mp3", "right-only.mp3"]]),
+    )
+
+    with pytest.raises(ValueError, match="left_only=1.*right_only=1"):
+        len(paired)
+
+
+def test_pair_index_can_use_intersection_and_report_unmatched_keys():
+    paired = webshart.PairedDataset(
+        FakeDataset([["shared.mp3", "left-only.mp3"]]),
+        FakeDataset([["shared.mp3", "right-only.mp3"]]),
