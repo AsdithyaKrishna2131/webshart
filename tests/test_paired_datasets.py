@@ -57,3 +57,13 @@ def test_pair_index_rejects_duplicate_keys():
 
 def test_discover_paired_dataset_uses_same_repo_for_two_subfolders(monkeypatch):
     calls = []
+
+    def fake_discover(source, **kwargs):
+        calls.append((source, kwargs))
+        return FakeDataset([[f"{kwargs['subfolder']}.mp3"]])
+
+    monkeypatch.setattr(webshart, "discover_dataset", fake_discover)
+    paired = webshart.discover_paired_dataset(
+        "owner/dataset",
+        left_subfolder="original",
+        right_subfolder="covers",
