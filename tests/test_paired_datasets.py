@@ -67,3 +67,13 @@ def test_discover_paired_dataset_uses_same_repo_for_two_subfolders(monkeypatch):
         "owner/dataset",
         left_subfolder="original",
         right_subfolder="covers",
+        strict=False,
+    )
+
+    assert paired.left.list_samples_in_shard(0) == ["original.mp3"]
+    assert paired.right.list_samples_in_shard(0) == ["covers.mp3"]
+    assert [call[0] for call in calls] == ["owner/dataset", "owner/dataset"]
+
+
+def test_paired_loader_loads_both_locations(monkeypatch):
+    class FakeLoader:
