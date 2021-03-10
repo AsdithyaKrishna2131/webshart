@@ -10,3 +10,7 @@ dataset = discover_dataset(
     # subfolder="data",
     hf_token=hf_token,
 )
+loader = TarDataLoader(dataset)
+
+shards_to_bucket = [0]
+for shard in shards_to_bucket:
