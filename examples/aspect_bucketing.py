@@ -14,3 +14,7 @@ loader = TarDataLoader(dataset)
 
 shards_to_bucket = [0]
 for shard in shards_to_bucket:
+    """
+    `key` can be `aspect`, `geometry-tuple` or `geometry-list` depending on how you require aspect buckets to be indexed.
+    - aspect: use the float value of w / h
+    - geometry-tuple: use the tuple (w, h)
