@@ -18,3 +18,7 @@ for shard in shards_to_bucket:
     `key` can be `aspect`, `geometry-tuple` or `geometry-list` depending on how you require aspect buckets to be indexed.
     - aspect: use the float value of w / h
     - geometry-tuple: use the tuple (w, h)
+    - geometry-list: use the list [w, h]
+    """
+    # Prefer the sample-oriented API for training pipelines. It excludes paired
+    # JSON sidecars before bucketing.
