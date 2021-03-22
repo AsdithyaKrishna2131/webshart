@@ -22,3 +22,7 @@ for shard in shards_to_bucket:
     """
     # Prefer the sample-oriented API for training pipelines. It excludes paired
     # JSON sidecars before bucketing.
+    buckets_info = loader.list_shard_sample_aspect_buckets(
+        [shard],
+        key="geometry-tuple",
+        target_pixel_area=1024
