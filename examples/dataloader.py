@@ -12,3 +12,8 @@ checkpoint_file = "dataloader_state.pkl"
 if os.path.exists(checkpoint_file):
     with open(checkpoint_file, "rb") as f:
         state = pickle.load(f)
+    loader.load_state_dict(state)
+    print(f"📂 Resumed from checkpoint: {loader.state_dict()}")
+
+# Or manually set position:
+# loader.shard(shard_idx=0)                    # Jump to a specific shard
