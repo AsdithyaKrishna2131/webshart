@@ -17,3 +17,8 @@ if os.path.exists(checkpoint_file):
 
 # Or manually set position:
 # loader.shard(shard_idx=0)                    # Jump to a specific shard
+# loader.shard(shard_idx=0, cursor_idx=100)    # Jump to shard 0, file 100
+# loader.skip(1000)                            # Skip to global file index 1000
+
+processed = 0
+
