@@ -10,3 +10,7 @@ dataset = discover_dataset(
     # subfolder="data",
     hf_token=hf_token,
 )
+print("Enabling cache.")
+dataset.enable_metadata_cache(location=os.path.join(os.getcwd(), "metadata_cache"))
+dataset.enable_shard_cache(
+    location=os.path.join(os.getcwd(), "shard_cache"), cache_limit_gb=25.0
