@@ -19,3 +19,7 @@ print("Cache enabled. Creating loader.")
 loader = BucketDataLoader(dataset, batch_size=4)
 print("Loader OK.")
 
+processed = 0
+import time
+
+timer_start = time.time()
