@@ -14,3 +14,8 @@ print("Enabling cache.")
 dataset.enable_metadata_cache(location=os.path.join(os.getcwd(), "metadata_cache"))
 dataset.enable_shard_cache(
     location=os.path.join(os.getcwd(), "shard_cache"), cache_limit_gb=25.0
+)
+print("Cache enabled. Creating loader.")
+loader = BucketDataLoader(dataset, batch_size=4)
+print("Loader OK.")
+
