@@ -4,3 +4,5 @@ import os
 import pickle
 
 hf_token = get_token()
+dataset = discover_dataset(
+    source="laion/conceptual-captions-12m-webdataset",
