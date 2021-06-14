@@ -7,3 +7,7 @@ dataset = webshart.discover_dataset(
 
 # Quick stats (instant, uses cached values if available)
 stats = dataset.get_stats()
+print(f"Total shards: {stats['total_shards']}")
+print(f"Estimated total files: {stats.get('total_files', 'Unknown')}")
+
+# Detailed stats (loads all metadata)
