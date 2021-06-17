@@ -11,3 +11,6 @@ print(f"Total shards: {stats['total_shards']}")
 print(f"Estimated total files: {stats.get('total_files', 'Unknown')}")
 
 # Detailed stats (loads all metadata)
+# detailed = dataset.get_detailed_stats()
+# print(f"Exact total files: {detailed['total_files']:,}")
+# print(f"Average files per shard: {detailed['average_files_per_shard']:.1f}")
