@@ -1,0 +1,1 @@
+from webshart import MetadataExtractor
