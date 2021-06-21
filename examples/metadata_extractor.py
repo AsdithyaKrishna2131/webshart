@@ -6,3 +6,5 @@ extractor = MetadataExtractor(hf_token=get_token())
 
 # Generate indices for a dataset
 extractor.extract_metadata(
+    source="username/dataset-name",  # HF dataset or local path
+    destination="./indices/",  # Where to save JSON files
