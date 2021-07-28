@@ -5,3 +5,7 @@ It is intended for low-volume IO, with better solutions on the way for extended 
 
 Alternatively, if you host your own minIO or similar, feel free to use this API, it is fast.
 """
+
+import webshart
+from huggingface_hub import get_token
+
