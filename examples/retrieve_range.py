@@ -13,3 +13,7 @@ dataset = webshart.discover_dataset(
     "NebulaeWis/e621-2024-webp-4Mpixel", hf_token=get_token()
 )
 
+# Read files 0-100 from each of the first 10 shards
+requests = []
+for shard_idx in range(10):
+    for file_idx in range(100):
