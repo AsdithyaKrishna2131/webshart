@@ -17,3 +17,7 @@ dataset = webshart.discover_dataset(
 requests = []
 for shard_idx in range(10):
     for file_idx in range(100):
+        requests.append((shard_idx, file_idx))
+
+# Batch read in chunks of 500 files
+for chunk_idx, i in enumerate(range(0, len(requests), 500)):
