@@ -341,3 +341,50 @@ This uses logical samples from `metadata.sample_range()` / `get_sample_by_index(
 
 **Problem**: Standard tar files require sequential reading. To get file #10,000, you must read through files #1-9,999 first.
 
+**Solution**: The indexed format stores byte offsets and sample metadata in a separate JSON file, enabling:
+
+- HTTP range requests for any file
+- True random access over network
+- Parallel reads from multiple shards
+- Large scale, aspect-bucketed datasets
+- No wasted bandwidth
+
+The Rust implementation provides:
+
+- Real parallelism (no Python GIL)
+- Zero-copy operations where possible
+- Efficient HTTP connection pooling
+- Optimized tokio async runtime
+- Optional local caching for metadata and shards
+- Fast aspect bucketing for image data
+
+## Datasets Using This Format
+
+I discovered after creating this library that [cheesechaser](https://github.com/deepghs/cheesechaser) is the origin of the indexed tar format, which webshart has formalised and extended to include aspect bucketing support.
+
+- `NebulaeWis/e621-2024-webp-4Mpixel`
+- `picollect/danbooru2` (subfolder: `images`)
+- [`webshart/OpenVid-1M-webshart-indices`](https://huggingface.co/datasets/webshart/OpenVid-1M-webshart-indices) (indices for [`Dev-Jahn/OpenVid-1M-wds`](https://huggingface.co/datasets/Dev-Jahn/OpenVid-1M-wds))
+- Many picollect image datasets
+- Your dataset could be next! See "Creating Indices" above
+
+## Requirements
+
+- Python 3.12+
+- Linux/macOS/Windows
+
+## Roadmap
+
+- image decoding is currently not handled by this library, but it will be added with zero-copy.
+- more informative API for caching and other Rust implementation details
+- multi-gpu/multi-node friendly dataloader
+
+## Projects using webshart
+
+- [CaptionFlow](https://github.com/Merkle/CaptionFlow) uses this library to solve memory use and seek performance issues typical to webdatasets
+
+## License
+
+MIT
+
+<!-- draft note 101 -->
