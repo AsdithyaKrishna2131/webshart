@@ -171,3 +171,34 @@ class CacheWaitContext:
                             unit_scale=True,
                             total=shard_info.get("size", 0),
                         )
+
+                    last_downloaded = 0
+                    while self.dataloader.will_block() and not self._interrupted:
+                        # Update progress bar with download status
+                        status = self.dataloader.get_shard_cache_status(
+                            shard_info["name"]
+                        )
+                        if status and status["cur_filesize"] > last_downloaded:
+                            update_amount = status["cur_filesize"] - last_downloaded
+                            if self.cache_pbar is not None:
+                                self.cache_pbar.update(update_amount)
+                            last_downloaded = status["cur_filesize"]
+
+                    if self.cache_pbar is not None:
+                        self.cache_pbar.close()
+                        self.cache_pbar = None
+
+                    if not self._interrupted:
+                        # Prepare the next one
+                        self.dataloader.prepare_next_shard()
+
+            if self._interrupted:
+                break
+
+            try:
+                # Now get the next item
+                entry = next(data_iterator)
+                if self.pbar is not None:
+                    self.pbar.update(1)
+                yield entry
+            except StopIteration:
