@@ -274,3 +274,45 @@ class TestTarDataLoaderStateDict:
             webshart.TarDataLoader.from_state_dict(state)
 
         assert "No dataset_or_path provided" in str(exc_info.value)
+
+    def test_resumable_iteration_pattern(self, discovered_dataset):
+        """Test a typical resumable iteration pattern."""
+        import pickle
+
+        # Simulate checkpoint file
+        checkpoint_data = None
+        files_processed = []
+
+        # First run - process some files
+        loader = webshart.TarDataLoader(discovered_dataset, buffer_size=5)
+
+        for i, entry in enumerate(loader):
+            files_processed.append(entry.path)
+
+            # Simulate checkpoint every 7 files
+            if (i + 1) % 7 == 0:
+                checkpoint_data = pickle.dumps(loader.state_dict())
+                if i >= 13:  # Stop after 2 checkpoints
+                    break
+
+        assert len(files_processed) == 14
+
+        # Resume from checkpoint
+        state = pickle.loads(checkpoint_data)
+        resumed_loader = webshart.TarDataLoader.from_state_dict(
+            state, discovered_dataset
+        )
+
+        # Continue processing
+        resumed_files = []
+        for i, entry in enumerate(resumed_loader):
+            resumed_files.append(entry.path)
+            if i >= 5:  # Read 6 more files
+                break
+
+        # Should not have duplicates
+        assert resumed_files[0] not in files_processed
+
+        # The 15th file (index 14) should be the 5th file in shard 1
+        assert "shard_0001_000004" in resumed_files[0]
+        # Alternative check - just check it's the 5th file in its shard
