@@ -27,3 +27,12 @@ for entry in loader:
     print(f"Entry: {entry.job_id}")
     processed += 1
 
+    # Save checkpoint every 50 files
+    if processed % 50 == 0:
+        with open(checkpoint_file, "wb") as f:
+            pickle.dump(loader.state_dict(), f)
+
+    if processed >= 100:
+        break
+
+print(f"✅ Processed {processed} files.")
