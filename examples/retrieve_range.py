@@ -21,3 +21,10 @@ for shard_idx in range(10):
 
 # Batch read in chunks of 500 files
 for chunk_idx, i in enumerate(range(0, len(requests), 500)):
+    byte_list = webshart.read_files_batch(dataset, requests[i : i + 500])
+    for j, data in enumerate(byte_list):
+        if data:  # process successful reads
+            # Save with meaningful names
+            shard, file = requests[i + j]
+            with open(f"shard_{shard:04d}_file_{file:04d}.webp", "wb") as f:
+                f.write(data)
