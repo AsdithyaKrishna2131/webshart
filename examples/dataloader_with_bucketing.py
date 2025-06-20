@@ -23,3 +23,11 @@ processed = 0
 import time
 
 timer_start = time.time()
+print("- Starting to iterate over dataloader. -")
+for batch in loader.iter_batches():
+    print(f"Processing batch: {batch}")
+    processed += 1
+    if processed >= 100:
+        break
+
+print(f"✅ Processed {processed} batches in {time.time() - timer_start:.2f} seconds.")
