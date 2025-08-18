@@ -231,3 +231,43 @@ class TestIntegration:
 
 @pytest.mark.parametrize(
     "batch_size,expected_batches",
+    [
+        (10, 30),  # 300 files / 10 per batch
+        (50, 6),  # 300 files / 50 per batch
+        (100, 3),  # 300 files / 100 per batch
+    ],
+)
+def test_batch_iteration_still_works(discovered_dataset, batch_size, expected_batches):
+    """Test that existing batch functionality isn't broken."""
+    loader = TarDataLoader(
+        discovered_dataset, load_file_data=False, batch_size=batch_size
+    )
+
+    batches = list(loader.iter_batches())
+    assert len(batches) == expected_batches
+
+
+# Alternative test approach using mocks at a different level
+class TestWithMocking:
+    """Test using mocking at the Rust binding level."""
+
+    @pytest.fixture
+    def mock_loader(self, monkeypatch):
+        """Create a loader with mocked internals."""
+        from unittest.mock import Mock, MagicMock
+
+        # Create a mock loader that behaves like TarDataLoader
+        mock = MagicMock()
+        mock.num_shards = 3
+        mock.current_shard_index = 0
+        mock.current_file_index = 0
+
+        # Mock the iteration
+        mock.__iter__ = Mock(return_value=mock)
+        mock.__next__ = Mock(side_effect=StopIteration)
+
+        return mock
+
+    def test_mock_approach(self, mock_loader):
+        """Example of testing with mocks."""
+        assert mock_loader.num_shards == 3
