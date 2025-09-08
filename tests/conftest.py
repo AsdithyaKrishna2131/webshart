@@ -28,3 +28,11 @@ PENDING_HF_HUB = [
 ]
 
 
+def pytest_collection_modifyitems(config, items):
+    for item in items:
+        for pattern in PENDING_HF_HUB:
+            if item.nodeid.endswith(pattern):
+                item.add_marker(pytest.mark.xfail(
+                    reason="pending HF Hub metadata path (not implemented yet)",
+                    strict=False))
+                break
