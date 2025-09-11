@@ -236,3 +236,42 @@ def test_optimize_dataset_rejects_changed_manifest_on_resume(tmp_path):
     destination = tmp_path / "output"
     _write_loose_pairs(source, count=2)
     webshart.optimize_dataset(
+        source,
+        destination=destination,
+        max_shard_size_bytes=1_500,
+        include_image_geometry=False,
+        max_shards=1,
+    )
+    (source / "nested" / "group-0" / "new.jpg").write_bytes(b"new")
+
+    try:
+        webshart.optimize_dataset(
+            source,
+            destination=destination,
+            max_shard_size_bytes=1_500,
+            include_image_geometry=False,
+        )
+    except ValueError as error:
+        assert "manifest_sha256" in str(error)
+    else:
+        raise AssertionError("changed source manifest should reject stale resume state")
+
+
+def test_optimize_dataset_coalesces_json_sidecar_metadata(tmp_path):
+    source = tmp_path / "source"
+    destination = tmp_path / "output"
+    source.mkdir()
+    (source / "sample.webp").write_bytes(b"payload")
+    sidecar = {"prompt": "json caption", "score": 0.9, "tags": ["one", "two"]}
+    (source / "sample.json").write_text(json.dumps(sidecar), encoding="utf-8")
+
+    webshart.optimize_dataset(
+        source,
+        destination=destination,
+        include_image_geometry=False,
+    )
+
+    metadata = json.loads((destination / "webshart" / "shard-00000.json").read_text())
+    entry = metadata["files"]["sample.webp"]
+    assert entry["captions"] == "json caption"
+    assert entry["json_metadata"] == sidecar
