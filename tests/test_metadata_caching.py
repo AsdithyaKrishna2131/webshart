@@ -284,3 +284,47 @@ class TestMetadataCachingPythonAPI:
     def test_cache_with_subfolder_datasets(self, temp_cache_dir):
         """Test that cache keys handle subfolders correctly"""
         from webshart import DatasetDiscovery
+
+        # Create dataset structure with subfolders
+        temp_dir = tempfile.mkdtemp()
+        try:
+            subfolder = os.path.join(temp_dir, "train")
+            os.makedirs(subfolder)
+
+            # Add mock files to subfolder
+            for i in range(2):
+                tar_path = os.path.join(subfolder, f"shard-{i:04d}.tar")
+                json_path = os.path.join(subfolder, f"shard-{i:04d}.json")
+                with open(tar_path, "wb") as f:
+                    f.write(b"mock")
+                with open(json_path, "w") as f:
+                    json.dump({"filesize": 1024, "files": {}}, f)
+
+            discovery = DatasetDiscovery()
+            dataset = discovery.discover_local(subfolder)
+
+            # Enable cache
+            dataset.enable_metadata_cache(temp_cache_dir, init_shard_count=1)
+
+            stats = dataset.get_cache_stats()
+            assert stats["cache_enabled"] is True
+
+            # Cache location should include the dataset name
+            assert (
+                "train" in stats["cache_location"]
+                or "subfolder" in stats["cache_location"]
+            )
+
+        finally:
+            shutil.rmtree(temp_dir)
+
+    def test_print_summary_with_cache(self, temp_cache_dir, temp_dataset_dir, capsys):
+        """Test print_summary works with caching enabled"""
+        from webshart import DatasetDiscovery
+
+        discovery = DatasetDiscovery()
+        dataset = discovery.discover_local(temp_dataset_dir)
+        dataset.enable_metadata_cache(temp_cache_dir, init_shard_count=2)
+
+        # Print summary. It'll just hang if the cache isn't working.
+        dataset.print_summary(detailed=True)
