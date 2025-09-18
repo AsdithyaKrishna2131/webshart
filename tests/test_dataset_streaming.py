@@ -387,3 +387,58 @@ class TestDataLoaderIntegration:
         assert [entry.job_id for entry in entries] == [
             "shard0000_file000001",
             "shard0000_file000003",
+        ]
+        assert [bytes(entry.data) for entry in entries] == [b"small-zero", b"z" * 100]
+
+    def test_max_file_size_filters_metadata_direct_access_and_batches(
+        self, mixed_size_dataset_dir
+    ):
+        """Every loader-facing access path hides oversized files."""
+        loader = webshart.TarDataLoader(
+            mixed_size_dataset_dir,
+            load_file_data=False,
+            max_file_size=100,
+            buffer_size=1,
+            batch_size=1,
+        )
+
+        assert list(loader.get_metadata(0)) == ["1-small.jpg", "3-small.jpg"]
+        samples = loader.list_samples_in_shard(0)
+        assert samples == [
+            {"sample_idx": 1, "filename": "1-small.jpg"},
+            {"sample_idx": 3, "filename": "3-small.jpg"},
+        ]
+        assert loader.load_sample(0, 0) is None
+        assert [loader.load_sample(0, sample["sample_idx"]).path for sample in samples] == [
+            "1-small.jpg",
+            "3-small.jpg",
+        ]
+
+        batches = list(loader.iter_batches())
+        assert [[entry.path for entry in batch] for batch in batches] == [
+            ["1-small.jpg"],
+            ["3-small.jpg"],
+        ]
+        assert all(bytes(entry.data) == b"" for batch in batches for entry in batch)
+
+        bucket_loader = webshart.BucketDataLoader(
+            mixed_size_dataset_dir,
+            max_file_size=100,
+            lazy_load=False,
+        )
+        assert [entry.path for entry in bucket_loader] == ["1-small.jpg", "3-small.jpg"]
+
+    def test_entry_repr(self, discovered_dataset):
+        """Test TarFileEntry __repr__ method."""
+        loader = webshart.TarDataLoader(discovered_dataset)
+        entry = next(loader)
+
+        repr_str = repr(entry)
+        assert "TarFileEntry" in repr_str
+        assert entry.path in repr_str
+        assert str(entry.offset) in repr_str
+        assert str(entry.size) in repr_str
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
