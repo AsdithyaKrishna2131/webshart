@@ -204,3 +204,38 @@ def test_quick_stats():
         metadata = create_test_shard_metadata(0, num_files=10)
         json_path = Path(tmpdir) / "data-0000.json"
         with open(json_path, "w") as f:
+            json.dump(metadata, f)
+        tar_path = Path(tmpdir) / "data-0000.tar"
+        tar_path.touch()
+
+        dataset = webshart.discover_dataset(tmpdir)
+
+        # Local datasets don't have cached stats
+        size, files = dataset.quick_stats()
+        assert size is None
+        assert files is None
+
+
+def test_shard_reader():
+    """Test opening and using a shard reader."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        # Create dataset with proper tar file
+        metadata = create_test_shard_metadata(0, num_files=5)
+        json_path = Path(tmpdir) / "data-0000.json"
+        with open(json_path, "w") as f:
+            json.dump(metadata, f)
+
+        # Create a minimal tar file with actual data
+        tar_path = Path(tmpdir) / "data-0000.tar"
+        # For testing, just create a file with enough bytes
+        with open(tar_path, "wb") as f:
+            # Write enough data to cover the offsets in metadata
+            f.write(b"\0" * 10000)
+
+        dataset = webshart.discover_dataset(tmpdir)
+        reader = dataset.open_shard(0)
+
+        assert reader.num_files == 5
+        filenames = reader.filenames()
+        assert len(filenames) == 5
+        assert "0.webp" in filenames
