@@ -316,3 +316,4 @@ class TestTarDataLoaderStateDict:
         # The 15th file (index 14) should be the 5th file in shard 1
         assert "shard_0001_000004" in resumed_files[0]
         # Alternative check - just check it's the 5th file in its shard
+        # assert "000004" in resumed_files[0]
