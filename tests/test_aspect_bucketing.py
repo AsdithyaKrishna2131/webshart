@@ -295,3 +295,48 @@ class TestAspectBucketing:
 
         assert len(buckets) == 1
         assert len(buckets[0]["buckets"]) == 0
+
+    def test_aspect_ratio_calculation(self, mock_loader_factory):
+        """Test that aspect ratios are calculated correctly when not provided."""
+        loader = mock_loader_factory()
+
+        # Images without explicit aspect field should have it calculated
+        loader.list_shard_aspect_buckets.return_value = [
+            {
+                "shard_idx": 0,
+                "shard_name": "shard-00000.tar",
+                "buckets": {
+                    "1.333": [  # 4:3 aspect ratio (e.g., 1024x768)
+                        {"filename": "image1.jpg", "width": 1024, "height": 768}
+                    ],
+                    "0.750": [  # 3:4 aspect ratio (e.g., 768x1024)
+                        {"filename": "image2.jpg", "width": 768, "height": 1024}
+                    ],
+                },
+            }
+        ]
+
+        buckets = loader.list_shard_aspect_buckets([0])
+
+        assert "1.333" in buckets[0]["buckets"]
+        assert "0.750" in buckets[0]["buckets"]
+
+    def test_scaling_dimensions(self):
+        """Test the dimension scaling logic."""
+        # Test landscape image
+        from webshart._webshart import scale_dimensions
+
+        # Landscape: 1920x1080 -> 1024x576 (maintaining aspect ratio)
+        w, h = scale_dimensions(1920, 1080, 1024**2)
+        assert w == 1344
+        assert h == 768
+
+        # Portrait: 1080x1920 -> 768x1024
+        w, h = scale_dimensions(1080, 1920, 1024**2)
+        assert w == 768
+        assert h == 1344
+
+        # Square: 1000x1000 -> 1024x1024
+        w, h = scale_dimensions(1000, 1000, 1024**2)
+        assert w == 1024
+        assert h == 1024
