@@ -77,3 +77,21 @@ def test_discover_paired_dataset_uses_same_repo_for_two_subfolders(monkeypatch):
 
 def test_paired_loader_loads_both_locations(monkeypatch):
     class FakeLoader:
+        def __init__(self, dataset, **kwargs):
+            self.dataset = dataset
+            self.kwargs = kwargs
+
+        def load_sample(self, shard_index, sample_index):
+            return self.dataset.list_samples_in_shard(shard_index)[sample_index]
+
+    monkeypatch.setattr(webshart, "TarDataLoader", FakeLoader)
+    paired = webshart.PairedDataset(
+        FakeDataset([["sample.mp3"]]),
+        FakeDataset([["sample.wav"]]),
+    )
+    loader = webshart.PairedTarDataLoader(paired, load_file_data=False)
+
+    loaded = loader.load_pair(0)
+    assert loaded == webshart.LoadedSamplePair(
+        key="sample", left="sample.mp3", right="sample.wav"
+    )
