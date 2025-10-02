@@ -223,3 +223,40 @@ class TestEdgeCases:
         num_shards = 100
 
         for i in range(num_shards):
+            tar_path = tmp_path / f"shard-{i:04d}.tar"
+            tar_path.write_bytes(b"mock")
+
+            metadata = {
+                "path": f"shard-{i:04d}.tar",
+                "filesize": 1000000,
+                "files": {
+                    f"file_{j}.dat": {"offset": j * 100, "length": 90}
+                    for j in range(10)
+                },
+            }
+            json_path = tmp_path / f"shard-{i:04d}.json"
+            json_path.write_text(json.dumps(metadata))
+
+        dataset = discover_dataset(str(tmp_path))
+
+        # Quick stats should be instant
+        import time
+
+        start = time.time()
+        stats = dataset.get_stats()
+        quick_time = time.time() - start
+
+        assert stats["total_shards"] == num_shards
+        assert quick_time < 0.1  # Should be very fast
+
+        # Detailed stats will be slower (loads all metadata)
+        start = time.time()
+        detailed = dataset.get_detailed_stats()
+        detailed_time = time.time() - start
+
+        assert detailed["total_files"] == num_shards * 10
+        assert detailed_time > quick_time  # Should take longer
+
+
+if __name__ == "__main__":
+    pytest.main([__file__, "-v"])
