@@ -363,3 +363,56 @@ class TestBucketDataLoader:
         from webshart import BucketDataLoader
 
         loader = BucketDataLoader(dataset_or_path=mock_dataset)
+
+        # Reset
+        loader.reset()
+
+        assert reset_called[0]
+        assert loader.current_bucket_idx == 0
+        assert loader.current_entry_idx == 0
+        assert loader.random_position == 0
+
+    @patch("webshart.BucketDataLoader")
+    def test_repr(self, MockBucketDataLoader, mock_dataset):
+        """Test string representation"""
+        mock_instance = Mock()
+        mock_instance.__repr__ = Mock(
+            return_value="BucketDataLoader(buckets=3, strategy=Sequential, current_bucket=1)"
+        )
+        MockBucketDataLoader.return_value = mock_instance
+
+        from webshart import BucketDataLoader
+
+        loader = BucketDataLoader(dataset_or_path=mock_dataset)
+
+        repr_str = repr(loader)
+
+        assert "BucketDataLoader" in repr_str
+        assert "buckets=3" in repr_str
+        assert "current_bucket=1" in repr_str
+
+    @patch("webshart.BucketDataLoader")
+    @pytest.mark.parametrize(
+        "sampling_strategy", ["sequential", "random_within_buckets", "fully_random"]
+    )
+    def test_all_sampling_strategies(
+        self, MockBucketDataLoader, mock_dataset, sampling_strategy
+    ):
+        """Test that all sampling strategies work without errors"""
+        # Create mock that returns one item then stops
+        mock_instance = Mock()
+        mock_instance.__iter__ = Mock(
+            return_value=iter([{"path": "test.jpg", "data": b"data"}])
+        )
+        MockBucketDataLoader.return_value = mock_instance
+
+        from webshart import BucketDataLoader
+
+        loader = BucketDataLoader(
+            dataset_or_path=mock_dataset, sampling_strategy=sampling_strategy
+        )
+
+        # Should be able to get at least one item
+        result = next(iter(loader))
+        assert result is not None
+        assert result["path"] == "test.jpg"
