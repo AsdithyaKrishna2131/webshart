@@ -485,3 +485,67 @@ def test_write_captions_to_metadata_uses_plural_key():
         assert updated == 1
         stored = json.loads(metadata_path.read_text(encoding="utf-8"))
         assert stored["files"]["sample.webp"]["captions"] == [
+            "new caption",
+            "alternate caption",
+        ]
+        assert "caption" not in stored["files"]["sample.webp"]
+        assert "captions" not in stored["files"]["sample.json"]
+
+
+def test_write_captions_to_metadata_skips_non_dict_file_entries():
+    """Test list-format metadata tolerates invalid/non-dict file entries."""
+    metadata = {
+        "files": [
+            None,
+            "invalid",
+            {"path": "sample.webp", "offset": 512, "length": 32},
+        ]
+    }
+
+    updated = webshart.apply_captions_to_metadata(metadata, {"sample": "caption"})
+
+    assert updated == 1
+    assert metadata["files"][2]["captions"] == "caption"
+
+
+def test_sample_aspect_buckets_skip_paired_json_sidecars():
+    """Test logical-sample aspect buckets do not include paired JSON sidecars."""
+    with tempfile.TemporaryDirectory() as tmpdir:
+        metadata = {
+            "filesize": 2048,
+            "files": {
+                "sample.json": {
+                    "offset": 512,
+                    "length": 128,
+                    "width": 999,
+                    "height": 999,
+                    "aspect": 1.0,
+                },
+                "sample.webp": {
+                    "offset": 1024,
+                    "length": 256,
+                    "width": 512,
+                    "height": 512,
+                    "aspect": 1.0,
+                },
+            },
+        }
+        (Path(tmpdir) / "data-0000.json").write_text(json.dumps(metadata), encoding="utf-8")
+        (Path(tmpdir) / "data-0000.tar").touch()
+
+        dataset = webshart.discover_dataset(tmpdir)
+        loader = webshart.TarDataLoader(dataset, load_file_data=False)
+
+        file_buckets = loader.list_shard_aspect_buckets([0])
+        sample_buckets = loader.list_shard_sample_aspect_buckets([0])
+
+        file_bucket_entries = list(file_buckets[0]["buckets"].values())[0]
+        sample_bucket_entries = list(sample_buckets[0]["buckets"].values())[0]
+
+        assert [entry["filename"] for entry in file_bucket_entries] == [
+            "sample.json",
+            "sample.webp",
+        ]
+        assert all("sample_idx" not in entry for entry in file_bucket_entries)
+        assert [entry["filename"] for entry in sample_bucket_entries] == ["sample.webp"]
+        assert sample_bucket_entries[0]["sample_idx"] == 0
