@@ -867,3 +867,104 @@ def optimize_dataset(
                         progress=progress,
                     )
                 else:
+                    with tarfile.open(
+                        tar_path, mode="w", format=tarfile.PAX_FORMAT
+                    ) as archive:
+                        while state.next_sample_index < len(samples):
+                            sample = samples[state.next_sample_index]
+                            payload_size = _source_file_size(
+                                sample.payload,
+                                source_repo=source_repo,
+                                source_subfolder=source_subfolder,
+                                source_revision=source_revision,
+                                token=token,
+                            )
+                            member_size = _tar_member_size(payload_size)
+                            if (
+                                shard_samples
+                                and shard_size + member_size > max_shard_size_bytes
+                            ):
+                                break
+
+                            caption, sidecar_json = _metadata_from_sidecar(
+                                sample.sidecar,
+                                source_repo=source_repo,
+                                source_subfolder=source_subfolder,
+                                source_revision=source_revision,
+                                token=token,
+                            )
+                            _add_to_tar(
+                                archive,
+                                sample,
+                                payload_size,
+                                source_repo=source_repo,
+                                source_subfolder=source_subfolder,
+                                source_revision=source_revision,
+                                token=token,
+                            )
+                            if caption is not None:
+                                captions[sample.path] = caption
+                                state.captioned_samples += 1
+                            else:
+                                state.uncaptioned_samples += 1
+                            if sidecar_json is not None:
+                                json_metadata[sample.path] = sidecar_json
+                            state.next_sample_index += 1
+                            state.bytes_sharded += payload_size
+                            shard_samples += 1
+                            shard_size += member_size
+                            progress.update(1)
+
+                if shard_samples == 0:
+                    raise RuntimeError(
+                        f"failed to add sample at position {start_index}"
+                    )
+
+                extractor.extract_metadata(
+                    source=str(staging),
+                    destination=str(staging),
+                    max_workers=1,
+                    include_image_geometry=include_image_geometry,
+                )
+                _apply_sidecar_metadata(metadata_path, captions, json_metadata)
+                state.next_shard_index += 1
+                conversion_complete = (
+                    state.next_sample_index >= len(samples)
+                    if input_layout == "loose"
+                    else state.next_source_archive_index >= len(source_archives)
+                )
+                state.status = "complete" if conversion_complete else "running"
+                _write_state(state_path, state)
+
+                tar_repo_path = _repo_path(output_prefix, tar_path.name)
+                metadata_repo_path = _repo_path(output_prefix, metadata_path.name)
+                if push_to_hub:
+                    assert api is not None and CommitOperationAdd is not None
+                    api.create_commit(
+                        push_to_hub,
+                        operations=[
+                            CommitOperationAdd(tar_repo_path, str(tar_path)),
+                            CommitOperationAdd(metadata_repo_path, str(metadata_path)),
+                            CommitOperationAdd(state_repo_path, str(state_path)),
+                        ],
+                        commit_message=(
+                            f"Add optimized webshart shard {state.next_shard_index - 1:05d}"
+                        ),
+                        repo_type="dataset",
+                        revision=target_revision,
+                        token=token,
+                    )
+
+                if destination_path is not None:
+                    output_dir = destination_path / output_prefix
+                    shutil.move(str(tar_path), output_dir / tar_path.name)
+                    shutil.move(str(metadata_path), output_dir / metadata_path.name)
+                    shutil.copy2(state_path, output_dir / STATE_FILENAME)
+
+                for path in (tar_path, metadata_path, state_path):
+                    path.unlink(missing_ok=True)
+                shards_created += 1
+        finally:
+            progress.close()
+
+    return {**asdict(state), "shards_created": shards_created, "resumed": resumed}
