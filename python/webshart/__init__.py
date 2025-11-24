@@ -748,3 +748,95 @@ def main():
 
     optimize_parser = subparsers.add_parser(
         "optimize-captions",
+        help="Fold .txt/.json sidecar captions into webshart metadata indexes",
+    )
+    optimize_parser.add_argument("--source", required=True)
+    optimize_parser.add_argument("--destination", required=True)
+    optimize_parser.add_argument(
+        "--metadata", help="Separate local or Hub metadata source"
+    )
+    optimize_parser.add_argument("--subfolder")
+    optimize_parser.add_argument("--hf-token")
+    optimize_parser.add_argument("--range", help="Half-open shard range: start,end")
+    optimize_parser.add_argument("--shard-cache-dir")
+    optimize_parser.add_argument("--shard-cache-gb", type=float, default=25.0)
+    optimize_parser.add_argument("--parallel-downloads", type=int, default=4)
+    optimize_parser.add_argument(
+        "--push-to-hub",
+        metavar="REPO_ID",
+        help="Upload the export to a dataset repository",
+    )
+    optimize_parser.add_argument("--path-in-repo", default="")
+    optimize_parser.add_argument("--revision", default="main")
+
+    dataset_parser = subparsers.add_parser(
+        "optimize-dataset",
+        help=(
+            "Repackage loose pairs or legacy tar datasets into resumable "
+            "webshart shards"
+        ),
+    )
+    dataset_parser.add_argument("--source", required=True)
+    dataset_parser.add_argument(
+        "--destination",
+        help="Optional local output directory; omit for rolling Hub-only conversion",
+    )
+    dataset_parser.add_argument(
+        "--push-to-hub",
+        metavar="REPO_ID",
+        help="Target Hugging Face dataset repo (may be the source repo)",
+    )
+    dataset_parser.add_argument("--source-subfolder", "--subfolder", default="")
+    dataset_parser.add_argument(
+        "--output-prefix",
+        default="webshart",
+        help="Target subfolder for shards, indexes, and resume state",
+    )
+    dataset_parser.add_argument("--source-revision", default="main")
+    dataset_parser.add_argument("--target-revision", default="main")
+    dataset_parser.add_argument("--hf-token")
+    dataset_parser.add_argument(
+        "--max-shard-size-gb",
+        type=float,
+        default=1.0,
+        help="Approximate maximum tar shard size (default: 1 GiB)",
+    )
+    dataset_parser.add_argument(
+        "--payload-extensions",
+        help="Comma-separated payload extensions; defaults to common media types",
+    )
+    dataset_parser.add_argument(
+        "--no-image-geometry",
+        action="store_true",
+        help="Skip image width, height, and aspect extraction",
+    )
+    dataset_parser.add_argument(
+        "--max-shards",
+        type=int,
+        help="Stop after this many new shards; rerun to resume",
+    )
+    dataset_parser.add_argument(
+        "--private",
+        action="store_true",
+        help="Create a private target repo when it does not already exist",
+    )
+
+    args = parser.parse_args()
+
+    if args.command == "extract-metadata":
+        extract_metadata(args)
+    elif args.command == "optimize-captions":
+        try:
+            optimize_captions(args)
+        except Exception as exc:
+            print(f"✗ Error optimizing captions: {exc}", file=sys.stderr)
+            sys.exit(1)
+    elif args.command == "optimize-dataset":
+        try:
+            run_optimize_dataset(args)
+        except Exception as exc:
+            print(f"✗ Error optimizing dataset: {exc}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        parser.print_help()
+        sys.exit(1)
