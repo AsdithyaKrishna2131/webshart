@@ -202,3 +202,4 @@ class CacheWaitContext:
                     self.pbar.update(1)
                 yield entry
             except StopIteration:
+                break
