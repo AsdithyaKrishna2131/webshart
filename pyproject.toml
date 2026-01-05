@@ -35,3 +35,12 @@ hub = ["huggingface-hub>=1.0.0,<2.0.0"]
 webshart = "webshart:main"
 
 [project.urls]
+Homepage = "https://github.com/AsdithyaKrishna2131/webshart"
+Repository = "https://github.com/AsdithyaKrishna2131/webshart"
+Issues = "https://github.com/AsdithyaKrishna2131/webshart/issues"
+
+[tool.maturin]
+python-source = "python"
+module-name = "webshart._webshart"
+
+<!-- draft note 899 -->
