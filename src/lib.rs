@@ -41,3 +41,14 @@ fn _webshart(_py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
+#[cfg(test)]
+mod tests {
+    use super::digest_to_hex;
+
+    #[test]
+    fn digest_to_hex_preserves_leading_zeroes() {
+        assert_eq!(digest_to_hex([0x00, 0x01, 0x0f, 0x10, 0xff]), "00010f10ff");
+    }
+}
+
+<!-- draft note 895 -->
