@@ -168,3 +168,33 @@ impl MetadataResolver {
         }
 
         let response = request.send().await?;
+
+        if !response.status().is_success() {
+            return Err(WebshartError::MetadataNotFound(format!(
+                "Failed to fetch metadata from {}: HTTP {}",
+                url,
+                response.status()
+            )));
+        }
+
+        let response_text = response.text().await?;
+        serde_json::from_str::<ShardMetadata>(&response_text).map_err(|e| {
+            WebshartError::MetadataNotFound(format!("Invalid JSON in metadata file: {}", e))
+        })
+    }
+
+    async fn check_remote_metadata(&self, url: &str) -> bool {
+        let mut request = self.client.head(url);
+
+        if let Some(token) = &self.hf_token {
+            request = request.bearer_auth(token);
+        }
+
+        match request.send().await {
+            Ok(response) => response.status().is_success(),
+            Err(_) => false,
+        }
+    }
+}
+
+<!-- draft note 898 -->
