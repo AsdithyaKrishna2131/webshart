@@ -101,3 +101,22 @@ impl FileLoader for RemoteFileLoader {
                 Err(WebshartError::Http(reqwest::Error::from(
                     response.error_for_status().unwrap_err(),
                 )))
+            }
+        })
+    }
+}
+
+pub fn create_file_loader(
+    tar_path: &str,
+    is_remote: bool,
+    token: Option<String>,
+    runtime: Arc<Runtime>,
+) -> Box<dyn FileLoader> {
+    if is_remote {
+        Box::new(RemoteFileLoader::new(tar_path.to_string(), token, runtime))
+    } else {
+        Box::new(LocalFileLoader::new(tar_path.to_string()))
+    }
+}
+
+<!-- draft note 901 -->
