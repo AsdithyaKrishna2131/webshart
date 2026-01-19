@@ -583,3 +583,77 @@ impl Serialize for ShardMetadata {
         for file in &self.files {
             files_map.insert(
                 file.path.clone(),
+                FileInfo {
+                    path: Some(file.path.clone()),
+                    offset: file.offset,
+                    length: file.length,
+                    sha256: file.sha256.clone(),
+                    width: file.width,
+                    height: file.height,
+                    aspect: file.aspect,
+                    json_path: file.json_path.clone(),
+                    json_offset: file.json_offset,
+                    json_length: file.json_length,
+                    captions: file.captions.clone(),
+                    json_metadata: file.json_metadata.clone(),
+                },
+            );
+        }
+
+        #[derive(Serialize)]
+        struct Helper<'a> {
+            path: &'a str,
+            filesize: u64,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            hash: &'a Option<String>,
+            #[serde(skip_serializing_if = "Option::is_none")]
+            hash_lfs: &'a Option<String>,
+            files: HashMap<String, FileInfo>,
+            includes_image_geometry: bool,
+        }
+
+        let helper = Helper {
+            path: &self.path,
+            filesize: self.filesize,
+            hash: &self.hash,
+            hash_lfs: &self.hash_lfs,
+            files: files_map,
+            includes_image_geometry: self.includes_image_geometry,
+        };
+
+        helper.serialize(serializer)
+    }
+}
+
+pub fn ensure_shard_metadata_with_retry(
+    dataset: &mut DiscoveredDataset,
+    shard_idx: usize,
+) -> Result<()> {
+    let mut attempts = 0;
+    const MAX_ATTEMPTS: u32 = 5;
+
+    loop {
+        match dataset.ensure_shard_metadata(shard_idx) {
+            Ok(_) => return Ok(()),
+            Err(e) => {
+                if attempts >= MAX_ATTEMPTS {
+                    return Err(e.into());
+                }
+
+                if matches!(e, WebshartError::RateLimited) || e.to_string().contains("429") {
+                    attempts += 1;
+                    let wait_time = Duration::from_secs(2u64.pow(attempts));
+                    eprintln!(
+                        "[webshart] Rate limited, waiting {:?} before retry",
+                        wait_time
+                    );
+                    std::thread::sleep(wait_time);
+                } else {
+                    return Err(e.into());
+                }
+            }
+        }
+    }
+}
+
+<!-- draft note 902 -->
