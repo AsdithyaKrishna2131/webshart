@@ -35,3 +35,13 @@ pub enum WebshartError {
     CacheMiss(String),
 }
 
+pub type Result<T> = std::result::Result<T, WebshartError>;
+
+// Convert our Rust errors to Python exceptions
+impl From<WebshartError> for PyErr {
+    fn from(err: WebshartError) -> PyErr {
+        PyException::new_err(err.to_string())
+    }
+}
+
+<!-- draft note 903 -->
