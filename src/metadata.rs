@@ -656,4 +656,4 @@ pub fn ensure_shard_metadata_with_retry(
     }
 }
 
-<!-- draft note 902 -->
+<!-- draft note 906 -->
