@@ -696,3 +696,86 @@ mod tests {
 
         fs::write(&release_path, b"release").await.unwrap();
         assert!(child.wait().unwrap().success());
+
+        let cache_lock = evictor_cache
+            .lock_exclusive(evictor_cache.cache_lock_path())
+            .await
+            .unwrap();
+        evictor_cache.evict_if_needed_locked(1, None).await.unwrap();
+        drop(cache_lock);
+        assert!(!shard_path.exists());
+    }
+
+    #[tokio::test]
+    async fn initialization_preserves_another_process_active_download() {
+        let temp_dir = tempdir().unwrap();
+        let cache = cache_with_byte_limit(temp_dir.path(), 10);
+        cache.ensure_cache_dir().await.unwrap();
+
+        let download_lock = cache
+            .lock_exclusive(cache.download_lock_path("shard.tar"))
+            .await
+            .unwrap();
+        let temp_path = cache.temp_download_path("shard.tar");
+        fs::write(&temp_path, b"partial").await.unwrap();
+
+        let mut second_cache = cache_with_byte_limit(temp_dir.path(), 10);
+        second_cache.initialize_from_disk().await.unwrap();
+        assert!(temp_path.exists());
+
+        drop(download_lock);
+        second_cache.initialize_from_disk().await.unwrap();
+        assert!(!temp_path.exists());
+    }
+
+    #[tokio::test]
+    async fn eviction_refreshes_cache_contents_from_disk() {
+        let temp_dir = tempdir().unwrap();
+        let mut cache = cache_with_byte_limit(temp_dir.path(), 10);
+        cache.ensure_cache_dir().await.unwrap();
+        cache.initialize_from_disk().await.unwrap();
+
+        // Simulate a shard committed by another process after initialization.
+        fs::write(temp_dir.path().join("external.tar"), vec![0; 10])
+            .await
+            .unwrap();
+
+        let cache_lock = cache.lock_exclusive(cache.cache_lock_path()).await.unwrap();
+        cache.evict_if_needed_locked(1, None).await.unwrap();
+        drop(cache_lock);
+        assert!(!temp_dir.path().join("external.tar").exists());
+    }
+
+    #[tokio::test]
+    async fn cache_instances_download_a_shared_shard_only_once() {
+        let temp_dir = tempdir().unwrap();
+        let cache_one = cache_with_byte_limit(temp_dir.path(), 100);
+        let cache_two = cache_with_byte_limit(temp_dir.path(), 100);
+        cache_one.ensure_cache_dir().await.unwrap();
+
+        let mut server = mockito::Server::new_async().await;
+        let request = server
+            .mock("GET", "/shared.tar")
+            .with_status(200)
+            .with_body("shard contents")
+            .expect(1)
+            .create_async()
+            .await;
+        let url = format!("{}/shared.tar", server.url());
+
+        let (first, second) = tokio::join!(
+            cache_one.cache_shard("shared.tar", &url, None),
+            cache_two.cache_shard("shared.tar", &url, None),
+        );
+
+        assert_eq!(first.unwrap(), temp_dir.path().join("shared.tar"));
+        assert_eq!(second.unwrap(), temp_dir.path().join("shared.tar"));
+        assert_eq!(
+            fs::read(temp_dir.path().join("shared.tar")).await.unwrap(),
+            b"shard contents"
+        );
+        request.assert_async().await;
+    }
+}
+
+<!-- draft note 908 -->
