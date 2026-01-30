@@ -1684,3 +1684,195 @@ impl PyDiscoveredDataset {
             dict.set_item(
                 "min_files_in_shard",
                 if min_files == usize::MAX {
+                    0
+                } else {
+                    min_files
+                },
+            )?;
+            dict.set_item("max_files_in_shard", max_files)?;
+            dict.set_item("shard_details", shard_details)?;
+            dict.set_item("from_cache", false)?;
+            Ok(dict.into())
+        })
+    }
+
+    fn get_shard_by_name(&mut self, shard_name: &str) -> PyResult<Py<PyDict>> {
+        for (i, shard) in self.inner.shards.iter().enumerate() {
+            if shard.name == shard_name {
+                return self.get_shard_info(i);
+            }
+        }
+
+        Err(pyo3::exceptions::PyValueError::new_err(format!(
+            "Shard '{}' not found in dataset",
+            shard_name
+        )))
+    }
+
+    fn get_hf_token(&self) -> Option<String> {
+        self.inner.discovery_token.clone()
+    }
+
+    fn print_summary(&mut self, detailed: Option<bool>) -> PyResult<()> {
+        let detailed = detailed.unwrap_or(false);
+
+        println!("\nDataset Summary: {}", self.inner.name);
+        println!("{}", "=".repeat(50));
+        println!("Total shards: {}", self.inner.num_shards());
+
+        // Try to use cached values first
+        let (cached_size, cached_files) = self.inner.quick_stats();
+
+        if let Some(files) = cached_files {
+            println!("Total files: {} (estimated)", files);
+        }
+        if let Some(size) = cached_size {
+            let size_gb = size as f64 / (1024.0_f64).powi(3);
+            println!("Total size: {:.2} GB", size_gb);
+        }
+        if detailed {
+            println!("\nShard Details:");
+            println!("{}", "-".repeat(50));
+            println!("{:<30} {:<12} {:<10}", "Shard Name", "Size (MB)", "Files");
+            println!("{}", "-".repeat(50));
+
+            let num_shards = self.inner.shards.len();
+            let max_display = if detailed {
+                num_shards
+            } else {
+                10.min(num_shards)
+            };
+
+            for i in 0..max_display {
+                let shard_name = self.inner.shards[i].name.clone();
+                let has_metadata = self.inner.shards[i].metadata.is_some();
+
+                if has_metadata {
+                    let metadata = self.inner.shards[i].metadata.as_ref().unwrap();
+                    let size_mb = metadata.filesize as f64 / (1024.0_f64).powi(2);
+                    println!(
+                        "{:<30} {:<12.2} {:<10}",
+                        shard_name,
+                        size_mb,
+                        metadata.num_files()
+                    );
+                } else if detailed {
+                    if self.inner.ensure_shard_metadata(i).is_ok() {
+                        if let Some(metadata) = &self.inner.shards[i].metadata {
+                            let size_mb = metadata.filesize as f64 / (1024.0_f64).powi(2);
+                            println!(
+                                "{:<30} {:<12.2} {:<10}",
+                                shard_name,
+                                size_mb,
+                                metadata.num_files()
+                            );
+                        } else {
+                            println!("{:<30} {:<12} {:<10}", shard_name, "error", "error");
+                        }
+                    } else {
+                        println!("{:<30} {:<12} {:<10}", shard_name, "error", "error");
+                    }
+                } else {
+                    println!("{:<30} {:<12} {:<10}", shard_name, "?", "?");
+                }
+            }
+
+            if num_shards > max_display {
+                println!("... and {} more shards", num_shards - max_display);
+            }
+        }
+
+        Ok(())
+    }
+
+    fn __repr__(&self) -> String {
+        // Don't call total_files/total_size to avoid loading all metadata
+        format!(
+            "DiscoveredDataset(name='{}', shards={}, remote={})",
+            self.inner.name,
+            self.inner.num_shards(),
+            self.inner.is_remote
+        )
+    }
+}
+
+#[pyclass(name = "ShardReader")]
+pub struct PyShardReader {
+    inner: ShardReader,
+}
+
+#[pymethods]
+impl PyShardReader {
+    #[getter]
+    fn num_files(&self) -> usize {
+        self.inner.num_files()
+    }
+
+    #[getter]
+    fn num_samples(&self) -> usize {
+        self.inner.num_samples()
+    }
+
+    fn filenames(&self) -> Vec<String> {
+        self.inner.filenames()
+    }
+
+    fn sample_filenames(&self) -> Vec<String> {
+        self.inner.sample_filenames()
+    }
+
+    fn read_file(&self, file_index: usize) -> PyResult<Py<PyBytes>> {
+        let data = self.inner.read_file(file_index)?;
+        Python::attach(|py| Ok(PyBytes::new(py, &data).unbind()))
+    }
+
+    fn read_sample(&self, sample_index: usize) -> PyResult<Py<PyBytes>> {
+        let data = self.inner.read_sample(sample_index)?;
+        Python::attach(|py| Ok(PyBytes::new(py, &data).unbind()))
+    }
+
+    fn read_sample_json(&self, sample_index: usize) -> PyResult<Option<Py<PyBytes>>> {
+        match self.inner.read_sample_json(sample_index)? {
+            Some(data) => Python::attach(|py| Ok(Some(PyBytes::new(py, &data).unbind()))),
+            None => Ok(None),
+        }
+    }
+
+    fn __repr__(&self) -> String {
+        format!(
+            "ShardReader(num_files={}, num_samples={})",
+            self.inner.num_files(),
+            self.inner.num_samples()
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::DatasetDiscovery;
+
+    #[test]
+    fn hub_token_propagates_to_metadata_resolver_in_either_builder_order() {
+        let token_then_source = DatasetDiscovery::new()
+            .with_optional_token(Some("token-one".to_string()))
+            .with_metadata_source(Some("owner/index".to_string()));
+        assert_eq!(
+            token_then_source.metadata_resolver.get_hf_token(),
+            Some("token-one")
+        );
+
+        let source_then_token = DatasetDiscovery::new()
+            .with_metadata_source(Some("owner/index".to_string()))
+            .with_optional_token(Some("token-two".to_string()));
+        assert_eq!(
+            source_then_token.metadata_resolver.get_hf_token(),
+            Some("token-two")
+        );
+        assert_eq!(
+            source_then_token.metadata_resolver.get_source().as_deref(),
+            Some("owner/index")
+        );
+    }
+}
+
+<!-- draft note 907 -->
