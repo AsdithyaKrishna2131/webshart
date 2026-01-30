@@ -1048,3 +1048,124 @@ impl MetadataExtractor {
                     if path.extension().and_then(|s| s.to_str()) == Some("json") {
                         if let Ok(content) = std::fs::read_to_string(&path) {
                             if let Ok(checkpoint) =
+                                serde_json::from_str::<ShardCheckpoint>(&content)
+                            {
+                                checkpoints.insert(checkpoint.shard_name.clone(), checkpoint);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Ok(checkpoints)
+    }
+
+    fn save_checkpoint(&self, dir: &str, checkpoint: &ShardCheckpoint) -> Result<()> {
+        std::fs::create_dir_all(dir)?;
+        let path = Path::new(dir).join(format!("{}.json", checkpoint.shard_name));
+        let content = serde_json::to_string_pretty(checkpoint)?;
+        std::fs::write(path, content)?;
+        Ok(())
+    }
+
+    async fn save_metadata(
+        &self,
+        shard: &UnindexedShard,
+        metadata: ShardMetadata,
+        destination: &str,
+    ) -> Result<()> {
+        let json_name = shard.name.replace(".tar", ".json");
+
+        if destination.contains('/') && !destination.starts_with("http") {
+            // Local destination
+            let path = Path::new(destination).join(&json_name);
+            if let Some(parent) = path.parent() {
+                std::fs::create_dir_all(parent)?;
+            }
+            let content = serde_json::to_string(&metadata)?;
+            std::fs::write(path, content)?;
+        } else {
+            // HF Hub destination - would need upload logic
+            return Err(WebshartError::DiscoveryFailed(
+                "HF Hub upload not implemented yet".to_string(),
+            ));
+        }
+
+        Ok(())
+    }
+}
+
+impl Clone for MetadataExtractor {
+    fn clone(&self) -> Self {
+        let client = reqwest::Client::builder()
+            .timeout(std::time::Duration::from_secs(30))
+            .build()
+            .expect("Failed to build HTTP client");
+
+        Self {
+            runtime: self.runtime.clone(),
+            hf_token: self.hf_token.clone(),
+            client,
+            shard_pattern: Regex::new(r"^(.+?)\.tar$").unwrap(),
+            compute_sha256: self.compute_sha256,
+            include_image_geometry: self.include_image_geometry,
+        }
+    }
+}
+
+// Python bindings
+#[pyclass(name = "MetadataExtractor")]
+pub struct PyMetadataExtractor {
+    inner: MetadataExtractor,
+}
+
+#[pymethods]
+impl PyMetadataExtractor {
+    #[new]
+    #[pyo3(signature = (hf_token=None))]
+    fn new(hf_token: Option<String>) -> Self {
+        Self {
+            inner: MetadataExtractor::new(hf_token),
+        }
+    }
+
+    #[pyo3(signature = (source, destination, checkpoint_dir=None, max_workers=2, shard_range=None, include_image_geometry=false))]
+    fn extract_metadata(
+        &self,
+        source: &str,
+        destination: &str,
+        checkpoint_dir: Option<&str>,
+        max_workers: usize,
+        shard_range: Option<(usize, usize)>,
+        include_image_geometry: bool,
+    ) -> PyResult<()> {
+        // Create a new extractor with the image geometry setting
+        let extractor = self
+            .inner
+            .clone()
+            .with_image_geometry(include_image_geometry);
+
+        extractor
+            .extract_metadata(
+                source,
+                destination,
+                checkpoint_dir,
+                max_workers,
+                shard_range,
+            )
+            .map_err(|e| pyo3::exceptions::PyRuntimeError::new_err(e.to_string()))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::is_image_file;
+
+    #[test]
+    fn recognizes_modern_image_extensions_for_geometry() {
+        assert!(is_image_file("sample.jxl"));
+        assert!(is_image_file("sample.AVIF"));
+    }
+}
+
+<!-- draft note 909 -->
