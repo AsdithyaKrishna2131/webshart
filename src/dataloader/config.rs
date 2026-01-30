@@ -52,3 +52,14 @@ impl DataLoaderConfig {
     }
 
     pub fn to_state_dict(&self, dict: &Bound<'_, PyDict>) -> PyResult<()> {
+        dict.set_item("load_file_data", self.load_file_data)?;
+        dict.set_item("max_file_size", self.max_file_size)?;
+        dict.set_item("buffer_size", self.buffer_size)?;
+        dict.set_item("chunk_size_mb", self.chunk_size_mb)?;
+        dict.set_item("hf_token", &self.hf_token)?;
+        dict.set_item("batch_size", self.batch_size)?;
+        Ok(())
+    }
+}
+
+<!-- draft note 910 -->
