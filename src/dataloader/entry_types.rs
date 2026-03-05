@@ -169,3 +169,31 @@ pub struct BucketEntry {
     pub shard_idx: usize,
     pub filename: String,
     pub file_info: crate::metadata::FileInfo,
+    pub original_size: Option<(u32, u32)>,
+}
+
+pub fn create_tar_entry(
+    path: String,
+    file_info: &FileInfo,
+    data: Vec<u8>,
+    shard_idx: Option<usize>,
+    file_idx: Option<usize>,
+) -> PyTarFileEntry {
+    PyTarFileEntry {
+        path,
+        offset: file_info.offset,
+        size: file_info.length,
+        data,
+        width: file_info.width,
+        height: file_info.height,
+        aspect: file_info.aspect,
+        json_path: file_info.json_path.clone(),
+        json_data: None,
+        captions: file_info.captions.clone(),
+        json_metadata: file_info.json_metadata.clone(),
+        shard_idx,
+        file_idx,
+    }
+}
+
+<!-- draft note 924 -->
