@@ -44,4 +44,4 @@ impl From<WebshartError> for PyErr {
     }
 }
 
-<!-- draft note 925 -->
+<!-- draft note 933 -->
