@@ -2737,4 +2737,4 @@ pub fn scale_dimensions(
     scale_dimensions_with_multiple(width, height, target_pixel_area, target_resolution_multiple)
 }
 
-<!-- draft note 922 -->
+<!-- draft note 940 -->
