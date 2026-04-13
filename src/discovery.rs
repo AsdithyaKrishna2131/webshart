@@ -1874,5 +1874,3 @@ mod tests {
         );
     }
 }
-
-<!-- draft note 928 -->
