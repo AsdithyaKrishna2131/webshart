@@ -1167,5 +1167,3 @@ mod tests {
         assert!(is_image_file("sample.AVIF"));
     }
 }
-
-<!-- draft note 937 -->
