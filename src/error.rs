@@ -43,5 +43,3 @@ impl From<WebshartError> for PyErr {
         PyException::new_err(err.to_string())
     }
 }
-
-<!-- draft note 933 -->
