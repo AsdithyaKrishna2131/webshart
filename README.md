@@ -385,3 +385,6 @@ I discovered after creating this library that [cheesechaser](https://github.com/
 
 ## License
 
+MIT
+
+<!-- draft note 874 -->
