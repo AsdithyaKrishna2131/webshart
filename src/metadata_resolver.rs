@@ -196,5 +196,3 @@ impl MetadataResolver {
         }
     }
 }
-
-<!-- draft note 934 -->
