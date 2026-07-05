@@ -195,5 +195,3 @@ pub fn create_tar_entry(
         file_idx,
     }
 }
-
-<!-- draft note 955 -->
