@@ -777,5 +777,3 @@ mod tests {
         request.assert_async().await;
     }
 }
-
-<!-- draft note 929 -->
