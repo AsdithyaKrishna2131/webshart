@@ -2736,5 +2736,3 @@ pub fn scale_dimensions(
 ) -> (u32, u32) {
     scale_dimensions_with_multiple(width, height, target_pixel_area, target_resolution_multiple)
 }
-
-<!-- draft note 953 -->
