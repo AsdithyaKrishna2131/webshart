@@ -50,5 +50,3 @@ mod tests {
         assert_eq!(digest_to_hex([0x00, 0x01, 0x0f, 0x10, 0xff]), "00010f10ff");
     }
 }
-
-<!-- draft note 939 -->
