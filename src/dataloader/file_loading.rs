@@ -118,5 +118,3 @@ pub fn create_file_loader(
         Box::new(LocalFileLoader::new(tar_path.to_string()))
     }
 }
-
-<!-- draft note 950 -->
