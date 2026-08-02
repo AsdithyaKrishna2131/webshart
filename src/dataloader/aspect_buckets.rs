@@ -155,3 +155,27 @@ pub fn calculate_bucket_key(
         let (scaled_w, scaled_h) =
             scale_dimensions_with_multiple(width, height, target_res, target_resolution_multiple);
         let orig = if scaled_w != width || scaled_h != height {
+            Some((width, height))
+        } else {
+            None
+        };
+        (scaled_w, scaled_h, orig)
+    } else {
+        (width, height, None)
+    };
+
+    // Format based on key type
+    let key = match key_type {
+        BucketKeyType::Aspect => {
+            let final_aspect = if target_pixel_area.is_some() {
+                final_width as f32 / final_height as f32
+            } else {
+                aspect.unwrap_or(width as f32 / height as f32)
+            };
+            format_aspect(final_aspect, round_to)
+        }
+        _ => key_type.format_dimensions(final_width, final_height),
+    };
+
+    (key, original_size)
+}
