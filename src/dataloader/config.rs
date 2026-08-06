@@ -61,5 +61,3 @@ impl DataLoaderConfig {
         Ok(())
     }
 }
-
-<!-- draft note 948 -->
