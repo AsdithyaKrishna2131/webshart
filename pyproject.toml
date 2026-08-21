@@ -42,5 +42,3 @@ Issues = "https://github.com/AsdithyaKrishna2131/webshart/issues"
 [tool.maturin]
 python-source = "python"
 module-name = "webshart._webshart"
-
-<!-- draft note 962 -->
