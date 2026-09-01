@@ -37,5 +37,3 @@ mockito = "1.7.2"
 #lto = true
 #codegen-units = 1
 opt-level = 3
-
-<!-- draft note 967 -->
