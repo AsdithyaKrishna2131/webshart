@@ -11,3 +11,19 @@ Thanks for your interest in improving this project.
 ## Reporting problems
 
 Open an issue with the exact commands you ran, the version, and the output.
+
+## Development
+
+Rust core:
+
+`
+cargo test --release
+`
+
+Python bindings and the test suite (Python 3.12+):
+
+`
+pip install -e .
+pip install pytest
+pytest tests/ -o addopts="
+`
