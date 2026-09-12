@@ -371,7 +371,13 @@ def _metadata_from_sidecar(
         token=token,
     )
     if PurePosixPath(sidecar.path).suffix.lower() == ".txt":
-        return _normalize_caption(data.decode("utf-8")), None
+        try:
+            text = data.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError(
+                f"caption sidecar is not valid UTF-8: {sidecar.path}"
+            ) from exc
+        return _normalize_caption(text), None
 
     value = json.loads(data)
     if not isinstance(value, dict):
@@ -575,7 +581,10 @@ def _write_state(path: Path, state: OptimizationState) -> None:
 def _load_local_state(path: Path) -> Optional[OptimizationState]:
     if not path.is_file():
         return None
-    return OptimizationState(**json.loads(path.read_text(encoding="utf-8")))
+    try:
+        return OptimizationState(**json.loads(path.read_text(encoding="utf-8")))
+    except (TypeError, ValueError, KeyError) as exc:
+        raise ValueError(f"invalid optimization state file: {path}") from exc
 
 
 def _load_hub_state(

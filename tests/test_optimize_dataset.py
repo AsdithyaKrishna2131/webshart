@@ -4,6 +4,8 @@ from pathlib import Path
 import json
 import tarfile
 
+import pytest
+
 import webshart
 import webshart.optimize as optimize_module
 
@@ -275,3 +277,37 @@ def test_optimize_dataset_coalesces_json_sidecar_metadata(tmp_path):
     entry = metadata["files"]["sample.webp"]
     assert entry["captions"] == "json caption"
     assert entry["json_metadata"] == sidecar
+
+
+def test_optimize_dataset_rejects_non_utf8_caption_sidecar(tmp_path):
+    source = tmp_path / "source"
+    destination = tmp_path / "output"
+    source.mkdir()
+    (source / "sample.jpg").write_bytes(b"payload")
+    (source / "sample.txt").write_bytes(b"\xff\xfe\x00not utf8")
+
+    with pytest.raises(ValueError, match="not valid UTF-8"):
+        webshart.optimize_dataset(
+            source,
+            destination=destination,
+            include_image_geometry=False,
+        )
+
+
+def test_optimize_dataset_rejects_malformed_resume_state(tmp_path):
+    source = tmp_path / "source"
+    destination = tmp_path / "output"
+    source.mkdir()
+    (source / "sample.jpg").write_bytes(b"payload")
+    state_dir = destination / "webshart"
+    state_dir.mkdir(parents=True)
+    (state_dir / ".webshart-optimize-state.json").write_text(
+        json.dumps({"status": "running"}), encoding="utf-8"
+    )
+
+    with pytest.raises(ValueError, match="invalid optimization state file"):
+        webshart.optimize_dataset(
+            source,
+            destination=destination,
+            include_image_geometry=False,
+        )

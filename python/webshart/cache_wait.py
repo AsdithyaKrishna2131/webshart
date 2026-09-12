@@ -3,7 +3,6 @@ import time
 
 def next_with_cache_wait(loader):
     """Drop-in replacement for next() that waits for cache if needed."""
-    import time
 
     # Wait for cache if needed
     while loader.will_block():
@@ -22,7 +21,6 @@ def next_with_cache_wait(loader):
 
 def iter_with_cache_wait(loader, start_idx, end_idx):
     """Iterator that waits for cache when needed."""
-    import time
 
     for idx in range(start_idx, end_idx + 1):
         # Wait for cache if needed
@@ -58,6 +56,9 @@ class ShardCacheMonitor:
                 print(f"Downloaded: {progress['downloaded']} / {progress['total']}")
         """
         import asyncio
+
+        # A zero or negative interval would busy-spin the event loop.
+        update_interval = max(0.01, float(update_interval))
 
         # Start the download
         self.dataloader.prepare_shard_by_name(filename)
